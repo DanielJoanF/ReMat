@@ -1,0 +1,19 @@
+{
+  "name": "remat-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ReMat: Platform Kolaboratif Distributor-Konsumen untuk Industri Bebas Limbah",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "clean": "turbo clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  }
+}
