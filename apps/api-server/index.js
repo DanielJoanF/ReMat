@@ -13,6 +13,8 @@ const adminRoutes = require("./routes/admin");
 const transactionRoutes = require("./routes/transactions");
 const paymentRoutes = require("./routes/payments");
 const ratingRoutes = require("./routes/ratings");
+const searchRoutes = require("./routes/search");
+const alertRoutes = require("./routes/alerts");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -32,6 +34,8 @@ app.use("/admin", adminRoutes);
 app.use("/transactions", transactionRoutes);
 app.use("/transactions/:transactionId", paymentRoutes); // /transactions/:transactionId/pay & /payment
 app.use("/transactions/:transactionId", ratingRoutes);  // /transactions/:transactionId/rate & /rating
+app.use("/search", searchRoutes);
+app.use("/alerts", alertRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

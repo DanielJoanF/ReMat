@@ -1,9 +1,14 @@
 /**
- * @remat/ai-core — AI Core Services Placeholder
- * Implementation for Vector Search, LLM Integration, and Prompt Builders will be added in Phases 6-9.
+ * @remat/ai-core — AI Core Services
+ *
+ * Central export for all AI-related utilities:
+ * - Embedding generation (vector search)
+ * - (Future: Prompt Builder, LLM orchestration)
  */
+const embedding = require("./embedding");
 
 module.exports = {
-  version: "1.0.0",
-  status: "placeholder"
+  embedding,
+  generateEmbedding: embedding.generateEmbedding,
+  isEmbeddingAvailable: embedding.isAvailable
 };

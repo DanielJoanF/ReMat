@@ -1,5 +1,6 @@
 const { prisma } = require("@remat/database");
 const crypto = require("crypto");
+const { upsertMaterialEmbedding, deleteMaterialEmbedding } = require("./embeddingService");
 
 /**
  * Generate a unique material code.
@@ -254,7 +255,7 @@ const createMaterial = async (userId, data) => {
     throw err;
   }
 
-  return prisma.material.create({
+  const material = await prisma.material.create({
     data: {
       distributorId,
       categoryId: data.categoryId,
@@ -276,6 +277,11 @@ const createMaterial = async (userId, data) => {
       category: { select: { id: true, name: true, slug: true } }
     }
   });
+
+  // Fire-and-forget: generate embedding for new material
+  upsertMaterialEmbedding(material.id, material.title, category.name, material.description);
+
+  return material;
 };
 
 /**
@@ -318,7 +324,7 @@ const updateMaterial = async (materialId, userId, data) => {
     updateData.status = "DRAFT";
   }
 
-  return prisma.material.update({
+  const updated = await prisma.material.update({
     where: { id: materialId },
     data: updateData,
     include: {
@@ -326,6 +332,13 @@ const updateMaterial = async (materialId, userId, data) => {
       documents: true
     }
   });
+
+  // Fire-and-forget: re-generate embedding on content change
+  if (data.title !== undefined || data.description !== undefined || data.categoryId !== undefined) {
+    upsertMaterialEmbedding(updated.id, updated.title, updated.category.name, updated.description);
+  }
+
+  return updated;
 };
 
 /**
@@ -423,10 +436,18 @@ const reviewMaterial = async (materialId, action) => {
 
   const newStatus = action === "approve" ? "ACTIVE" : "REJECTED";
 
-  return prisma.material.update({
+  const updated = await prisma.material.update({
     where: { id: materialId },
-    data: { status: newStatus }
+    data: { status: newStatus },
+    include: { category: { select: { name: true } } }
   });
+
+  // When approved, ensure embedding exists (may have been generated at create time)
+  if (action === "approve") {
+    upsertMaterialEmbedding(updated.id, updated.title, updated.category.name, updated.description);
+  }
+
+  return updated;
 };
 
 module.exports = {

@@ -10,6 +10,7 @@
     "lint": "echo \"No lint for api-server\""
   },
   "dependencies": {
+    "@remat/ai-core": "workspace:*",
     "@remat/config": "workspace:*",
     "@remat/database": "workspace:*",
     "@supabase/supabase-js": "^2.43.0",

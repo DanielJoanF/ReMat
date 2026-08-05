@@ -6,5 +6,8 @@
   "scripts": {
     "build": "echo \"AI Core ready\"",
     "lint": "echo \"No lint for ai-core\""
+  },
+  "dependencies": {
+    "openai": "^4.52.0"
   }
 }

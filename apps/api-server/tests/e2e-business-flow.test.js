@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockDb } = vi.hoisted(() => {
+process.env.OPENAI_API_KEY = "mock-key-test";
+
+const { mockDb, mockGenerateEmbedding, mockIsAvailable } = vi.hoisted(() => {
   const mock = {
     category: {
       findMany: vi.fn(),
@@ -46,13 +48,43 @@ const { mockDb } = vi.hoisted(() => {
       create: vi.fn(),
       findUnique: vi.fn()
     },
-    $transaction: vi.fn((promises) => Promise.all(promises))
+    materialAlert: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn()
+    },
+    $transaction: vi.fn((promises) => Promise.all(promises)),
+    $queryRawUnsafe: vi.fn(),
+    $executeRawUnsafe: vi.fn()
   };
 
   // Set global.prisma before packages/database/index.js is ever required
   global.prisma = mock;
 
-  return { mockDb: mock };
+  const mockGenEmb = vi.fn().mockResolvedValue({
+    embedding: new Array(1536).fill(0.1),
+    model: "text-embedding-3-small"
+  });
+  const mockIsAvail = vi.fn().mockReturnValue(true);
+
+  return {
+    mockDb: mock,
+    mockGenerateEmbedding: mockGenEmb,
+    mockIsAvailable: mockIsAvail
+  };
+});
+
+vi.mock("openai", () => {
+  return {
+    OpenAI: vi.fn().mockImplementation(() => ({
+      embeddings: {
+        create: vi.fn().mockResolvedValue({
+          data: [{ embedding: new Array(1536).fill(0.1) }]
+        })
+      }
+    }))
+  };
 });
 
 vi.mock("@remat/database", () => {
@@ -62,10 +94,35 @@ vi.mock("@remat/database", () => {
   };
 });
 
+vi.mock("@remat/ai-core", () => {
+  return {
+    generateEmbedding: mockGenerateEmbedding,
+    isEmbeddingAvailable: mockIsAvailable,
+    embedding: {
+      generateEmbedding: mockGenerateEmbedding,
+      isAvailable: mockIsAvailable,
+      EXPECTED_DIMENSIONS: 1536,
+      DEFAULT_MODEL: "text-embedding-3-small"
+    }
+  };
+});
+
+vi.mock("openai", () => {
+  return {
+    OpenAI: vi.fn().mockImplementation(() => ({
+      embeddings: {
+        create: vi.fn().mockResolvedValue({
+          data: [{ embedding: new Array(1536).fill(0.1) }]
+        })
+      }
+    }))
+  };
+});
+
 import request from "supertest";
 import app from "../index.js";
 
-describe("E2E Business Flow Verification (Non-AI)", () => {
+describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
   const adminHeaders = {
     "x-user-id": "admin-123",
     "x-user-role": "ADMIN"
@@ -94,6 +151,13 @@ describe("E2E Business Flow Verification (Non-AI)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb.$transaction.mockImplementation((promises) => Promise.all(promises));
+    global.isEmbeddingAvailableMock = true;
+    global.generateEmbeddingMock = vi.fn().mockResolvedValue({
+      embedding: new Array(1536).fill(0.1),
+      model: "text-embedding-3-small"
+    });
+    mockDb.$queryRawUnsafe.mockReset();
+    mockDb.material.findMany.mockReset();
   });
 
   describe("Phase 1: Category Management (Admin)", () => {
@@ -187,7 +251,10 @@ describe("E2E Business Flow Verification (Non-AI)", () => {
       });
       mockDb.material.update.mockResolvedValue({
         id: "mat-100",
-        status: "ACTIVE"
+        title: "Cacahan PET Bening",
+        description: "Limbah cacahan botol",
+        status: "ACTIVE",
+        category: { name: "Plastik PET" }
       });
 
       const res = await request(app)
@@ -451,6 +518,133 @@ describe("E2E Business Flow Verification (Non-AI)", () => {
         .post("/transactions")
         .set(dist1Headers)
         .send({ items: [{ materialId: "mat-100", quantity: 1 }] });
+
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("Phase 6: AI Smart Search & Alerts", () => {
+    it("Search requires query parameter", async () => {
+      const res = await request(app)
+        .get("/search");
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toContain("'q' is required");
+    });
+
+    it("Semantic search returns results above threshold", async () => {
+      mockIsAvailable.mockReturnValue(true);
+      mockGenerateEmbedding.mockResolvedValue({
+        embedding: new Array(1536).fill(0.1),
+        model: "text-embedding-3-small"
+      });
+
+      mockDb.$queryRawUnsafe.mockResolvedValue([
+        {
+          id: "mat-100",
+          title: "Cacahan PET Bening",
+          description: "Cacahan botol PET bersih",
+          materialCode: "MAT-PET-001",
+          qualityGrade: "Grade A",
+          quantity: 15.5,
+          unit: "TON",
+          price: 11500000,
+          currency: "IDR",
+          location: "Semarang",
+          latitude: -6.96,
+          longitude: 110.41,
+          status: "ACTIVE",
+          createdAt: new Date(),
+          categoryId: "cat-1",
+          categoryName: "PET",
+          categorySlug: "pet",
+          distributorId: "dist-1",
+          distributorName: "PT Daur Ulang",
+          distributorCity: "Semarang",
+          distributorVerified: true,
+          similarity: 0.85
+        }
+      ]);
+
+      const res = await request(app)
+        .get("/search?q=plastik PET bening");
+
+      expect(res.status).toBe(200);
+      expect(res.body.searchType).toBe("semantic");
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].similarity).toBeGreaterThanOrEqual(0.6);
+    });
+
+    it("Semantic search returns empty + showAlert when below threshold", async () => {
+      mockIsAvailable.mockReturnValue(true);
+      mockGenerateEmbedding.mockResolvedValue({
+        embedding: new Array(1536).fill(0.1),
+        model: "text-embedding-3-small"
+      });
+
+      mockDb.$queryRawUnsafe.mockResolvedValue([]);
+
+      const res = await request(app)
+        .get("/search?q=material yang tidak ada");
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual([]);
+      expect(res.body.showAlert).toBe(true);
+      expect(res.body.message).toContain("belum tersedia");
+    });
+
+    it("Falls back to keyword search when Embedding API is unavailable", async () => {
+      global.isEmbeddingAvailableMock = false;
+
+      // Keyword search mock
+      mockDb.material.findMany.mockResolvedValue([
+        {
+          id: "mat-100",
+          title: "Cacahan PET Bening",
+          description: "Cacahan botol PET bersih",
+          status: "ACTIVE",
+          category: { id: "cat-1", name: "PET", slug: "pet" },
+          distributor: { id: "dist-1", companyName: "PT Daur Ulang", city: "Semarang", isVerified: true }
+        }
+      ]);
+      mockDb.material.count.mockResolvedValue(1);
+
+      const res = await request(app)
+        .get("/search?q=PET");
+
+      expect(res.status).toBe(200);
+      expect(res.body.searchType).toBe("keyword");
+      expect(res.body.fallback).toBe(true);
+      expect(res.body.data.length).toBe(1);
+    });
+
+    it("Consumer can create material alert", async () => {
+      mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-1" });
+      mockDb.materialAlert.create.mockResolvedValue({
+        id: "alert-1",
+        consumerId: "cons-prof-1",
+        queryText: "kaca bening limbah",
+        categoryId: null,
+        locationFilter: "Jawa Tengah",
+        isActive: true,
+        category: null
+      });
+
+      const res = await request(app)
+        .post("/alerts")
+        .set(cons1Headers)
+        .send({ queryText: "kaca bening limbah", locationFilter: "Jawa Tengah" });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.queryText).toBe("kaca bening limbah");
+      expect(res.body.data.isActive).toBe(true);
+    });
+
+    it("Non-consumer cannot create alert (403)", async () => {
+      const res = await request(app)
+        .post("/alerts")
+        .set(dist1Headers)
+        .send({ queryText: "test" });
 
       expect(res.status).toBe(403);
     });
