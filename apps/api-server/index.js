@@ -10,6 +10,9 @@ const categoryRoutes = require("./routes/categories");
 const materialRoutes = require("./routes/materials");
 const uploadRoutes = require("./routes/uploads");
 const adminRoutes = require("./routes/admin");
+const transactionRoutes = require("./routes/transactions");
+const paymentRoutes = require("./routes/payments");
+const ratingRoutes = require("./routes/ratings");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -26,6 +29,9 @@ app.use("/categories", categoryRoutes);
 app.use("/materials", materialRoutes);
 app.use("/materials", uploadRoutes); // /materials/:materialId/documents
 app.use("/admin", adminRoutes);
+app.use("/transactions", transactionRoutes);
+app.use("/transactions/:transactionId", paymentRoutes); // /transactions/:transactionId/pay & /payment
+app.use("/transactions/:transactionId", ratingRoutes);  // /transactions/:transactionId/rate & /rating
 
 // Global Error Handler
 app.use(errorHandler);

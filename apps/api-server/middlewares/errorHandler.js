@@ -1,5 +1,7 @@
 const errorHandler = (err, req, res, next) => {
-  console.error("[API Error]:", err.message || err);
+  if (process.env.NODE_ENV !== "test") {
+    console.error("[API Error]:", err.message || err);
+  }
 
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
