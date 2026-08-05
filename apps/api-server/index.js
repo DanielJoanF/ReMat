@@ -20,6 +20,8 @@ const circularReportRoutes = require("./routes/circularReports");
 const chatbotRoutes = require("./routes/chatbot");
 const bannerRoutes = require("./routes/banners");
 
+const { apiLimiter, aiLimiter } = require("./middlewares/rateLimit");
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -28,6 +30,9 @@ app.use(express.json());
 
 // Attach user context from headers on every request
 app.use(attachUser);
+
+// Apply rate limiting
+app.use(apiLimiter);
 
 // Routes
 app.use("/", healthRoutes);
@@ -38,11 +43,11 @@ app.use("/admin", adminRoutes);
 app.use("/transactions", transactionRoutes);
 app.use("/transactions/:transactionId", paymentRoutes); // /transactions/:transactionId/pay & /payment
 app.use("/transactions/:transactionId", ratingRoutes);  // /transactions/:transactionId/rate & /rating
-app.use("/search", searchRoutes);
+app.use("/search", aiLimiter, searchRoutes);
 app.use("/alerts", alertRoutes);
 app.use("/analytics", analyticsRoutes);
 app.use("/circular-reports", circularReportRoutes);
-app.use("/chat", chatbotRoutes);
+app.use("/chat", aiLimiter, chatbotRoutes);
 app.use("/banners", bannerRoutes);
 
 // Global Error Handler
