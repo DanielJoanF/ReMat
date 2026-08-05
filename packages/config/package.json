@@ -1,5 +1,10 @@
 {
   "name": "@remat/config",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "main": "./index.js",
+  "scripts": {
+    "build": "echo \"Config ready\"",
+    "lint": "echo \"No lint for config\""
+  }
 }

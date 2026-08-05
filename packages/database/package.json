@@ -2,6 +2,12 @@
   "name": "@remat/database",
   "version": "1.0.0",
   "private": true,
+  "main": "./index.js",
+  "scripts": {
+    "build": "prisma generate",
+    "generate": "prisma generate",
+    "lint": "echo \"No lint for database\""
+  },
   "dependencies": {
     "@prisma/client": "^5.12.0"
   },

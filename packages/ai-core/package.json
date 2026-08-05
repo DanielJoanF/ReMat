@@ -2,5 +2,9 @@
   "name": "@remat/ai-core",
   "version": "1.0.0",
   "private": true,
-  "main": "./index.js"
+  "main": "./index.js",
+  "scripts": {
+    "build": "echo \"AI Core ready\"",
+    "lint": "echo \"No lint for ai-core\""
+  }
 }

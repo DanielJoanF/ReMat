@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "main": "./index.js",
+  "scripts": {
+    "build": "echo \"UI ready\"",
+    "lint": "echo \"No lint for ui\""
+  },
   "dependencies": {
     "react": "^18.3.0"
   }

@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "ReMat: Platform Kolaboratif Distributor-Konsumen untuk Industri Bebas Limbah",
+  "packageManager": "pnpm@9.1.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -11,7 +12,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "clean": "turbo clean"
+    "generate": "turbo run generate"
   },
   "devDependencies": {
     "turbo": "^2.0.0"
