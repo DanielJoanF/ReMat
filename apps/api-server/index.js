@@ -15,6 +15,8 @@ const paymentRoutes = require("./routes/payments");
 const ratingRoutes = require("./routes/ratings");
 const searchRoutes = require("./routes/search");
 const alertRoutes = require("./routes/alerts");
+const analyticsRoutes = require("./routes/analytics");
+const circularReportRoutes = require("./routes/circularReports");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -36,6 +38,8 @@ app.use("/transactions/:transactionId", paymentRoutes); // /transactions/:transa
 app.use("/transactions/:transactionId", ratingRoutes);  // /transactions/:transactionId/rate & /rating
 app.use("/search", searchRoutes);
 app.use("/alerts", alertRoutes);
+app.use("/analytics", analyticsRoutes);
+app.use("/circular-reports", circularReportRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

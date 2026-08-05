@@ -33,6 +33,11 @@ const { mockDb, mockGenerateEmbedding, mockIsAvailable } = vi.hoisted(() => {
       findUnique: vi.fn(),
       delete: vi.fn()
     },
+    transactionItem: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn()
+    },
     transaction: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
@@ -53,6 +58,12 @@ const { mockDb, mockGenerateEmbedding, mockIsAvailable } = vi.hoisted(() => {
       findMany: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn()
+    },
+    circularReport: {
+      create: vi.fn(),
+      upsert: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn()
     },
     $transaction: vi.fn((promises) => Promise.all(promises)),
     $queryRawUnsafe: vi.fn(),
@@ -645,6 +656,151 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
         .post("/alerts")
         .set(dist1Headers)
         .send({ queryText: "test" });
+
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("Phase 7: Analytics Engine & Dashboard Insights", () => {
+    it("Distributor fetches tenant-isolated dashboard insight with LLM narration", async () => {
+      mockDb.distributorProfile.findUnique.mockResolvedValue({
+        id: "dist-prof-1",
+        companyName: "PT Daur Ulang Nusantara"
+      });
+      mockDb.transaction.findMany.mockResolvedValue([
+        { id: "tx-1", status: "COMPLETED", totalAmount: 10000000, createdAt: new Date() },
+        { id: "tx-2", status: "PENDING", totalAmount: 5000000, createdAt: new Date() }
+      ]);
+      mockDb.material.findMany.mockResolvedValue([
+        { id: "mat-1", title: "Cacahan PET", price: 5000000, quantity: 10, unit: "TON", status: "ACTIVE", categoryId: "cat-1", category: { name: "Plastik PET" } }
+      ]);
+      mockDb.transactionItem.findMany.mockResolvedValue([
+        { materialId: "mat-1", quantity: 2, subtotal: 10000000, material: { title: "Cacahan PET", unit: "TON" } }
+      ]);
+
+      global.isLlmAvailableMock = true;
+      global.generateTextMock = vi.fn().mockResolvedValue("Perusahaan PT Daur Ulang Nusantara memiliki tren penjualan positif dengan total pendapatan Rp 10.000.000.");
+
+      const res = await request(app)
+        .get("/analytics/dashboard")
+        .set(dist1Headers);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.metrics.companyName).toBe("PT Daur Ulang Nusantara");
+      expect(res.body.data.metrics.summary.completedRevenue).toBe(10000000);
+      expect(res.body.data.metrics.summary.pendingRevenue).toBe(5000000);
+      expect(res.body.data.aiSummary).toContain("PT Daur Ulang Nusantara");
+    });
+
+    it("LLM Failure Fallback: Dashboard returns 200 OK with raw SQL metrics when LLM fails", async () => {
+      mockDb.distributorProfile.findUnique.mockResolvedValue({
+        id: "dist-prof-1",
+        companyName: "PT Daur Ulang Nusantara"
+      });
+      mockDb.transaction.findMany.mockResolvedValue([]);
+      mockDb.material.findMany.mockResolvedValue([]);
+      mockDb.transactionItem.findMany.mockResolvedValue([]);
+
+      global.isLlmAvailableMock = false; // Simulated LLM downtime/unconfigured API
+
+      const res = await request(app)
+        .get("/analytics/dashboard")
+        .set(dist1Headers);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.metrics).toBeDefined();
+      expect(res.body.data.aiSummary).toBeNull();
+      expect(res.body.data.fallbackMessage).toContain("pemeliharaan");
+    });
+
+    it("Consumer cannot access distributor dashboard (403)", async () => {
+      mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-1" });
+
+      const res = await request(app)
+        .get("/analytics/dashboard")
+        .set(cons1Headers);
+
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("Phase 8: Circular Economy Report Engine", () => {
+    it("Admin triggers manual circular report generation with verified mathematical formulas", async () => {
+      mockDb.distributorProfile.findUnique.mockResolvedValue({
+        id: "dist-prof-1",
+        companyName: "PT Daur Ulang Nusantara",
+        userId: "dist-user-1"
+      });
+
+      // Mock 1 completed transaction of 2 TONs (= 2000 KG)
+      mockDb.transaction.findMany.mockResolvedValue([
+        {
+          id: "tx-10",
+          distributorId: "dist-prof-1",
+          status: "COMPLETED",
+          totalAmount: 23000000,
+          createdAt: new Date("2026-08-10T10:00:00Z"),
+          items: [
+            {
+              materialId: "mat-100",
+              quantity: 2,
+              material: { id: "mat-100", unit: "TON" }
+            }
+          ]
+        }
+      ]);
+
+      mockDb.material.findMany.mockResolvedValue([
+        { quantity: 1, unit: "TON" } // 1000 kg unutilized inventory
+      ]);
+
+      mockDb.circularReport.upsert.mockImplementation(({ create }) => Promise.resolve({ id: "report-2026-08", ...create }));
+
+      const res = await request(app)
+        .post("/circular-reports/generate")
+        .set(adminHeaders)
+        .send({ distributorId: "dist-prof-1", period: "2026-08" });
+
+      expect(res.status).toBe(201);
+      const data = res.body.data;
+      expect(data.period).toBe("2026-08");
+      // 2 TON = 2000 KG
+      expect(data.totalWasteUtilizedKg).toBe(2000);
+      // Carbon saving: 2000 * 1.8 = 3600 KG CO2e
+      expect(data.carbonSavingKg).toBe(3600);
+      expect(data.economicValue).toBe(23000000);
+      expect(data.transactionCount).toBe(1);
+      // Diversion rate: 2000 / (2000 + 1000) * 100 = 66.67%
+      expect(data.wasteDiversionRate).toBe(66.67);
+      expect(data.circularScore).toBeGreaterThan(0);
+    });
+
+    it("Distributor lists historical circular reports for their own profile", async () => {
+      mockDb.distributorProfile.findUnique.mockResolvedValue({ id: "dist-prof-1" });
+      mockDb.circularReport.findMany.mockResolvedValue([
+        { id: "rep-1", period: "2026-08", distributorId: "dist-prof-1", totalWasteUtilizedKg: 2000 }
+      ]);
+
+      const res = await request(app)
+        .get("/circular-reports/my")
+        .set(dist1Headers);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].period).toBe("2026-08");
+    });
+
+    it("Distributor 2 cannot access Distributor 1's circular report (403)", async () => {
+      mockDb.circularReport.findUnique.mockResolvedValue({
+        id: "rep-1",
+        period: "2026-08",
+        distributorId: "dist-prof-1",
+        distributor: { id: "dist-prof-1", userId: "dist-user-1" }
+      });
+
+      const res = await request(app)
+        .get("/circular-reports/rep-1")
+        .set(dist2Headers);
 
       expect(res.status).toBe(403);
     });
