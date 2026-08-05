@@ -66,8 +66,9 @@ web_modules/
 # Parcel buffer directory
 .parcel-cache
 
-# Next.js build output
+# Next.js & Turborepo build output
 .next/
+.turbo/
 out/
 
 # Nuxt.js build project dependency folder (https://nuxtjs.org/faq/github-actions/)

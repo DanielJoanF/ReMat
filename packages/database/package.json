@@ -6,7 +6,12 @@
   "scripts": {
     "build": "prisma generate",
     "generate": "prisma generate",
-    "lint": "echo \"No lint for database\""
+    "lint": "echo \"No lint for database\"",
+    "db:seed": "prisma db seed",
+    "db:push": "prisma db push"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^5.12.0"
