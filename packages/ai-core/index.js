@@ -21,5 +21,6 @@ module.exports = {
 
   promptBuilder,
   buildDashboardInsightPrompt: promptBuilder.buildDashboardInsightPrompt,
-  buildCircularReportPrompt: promptBuilder.buildCircularReportPrompt
+  buildCircularReportPrompt: promptBuilder.buildCircularReportPrompt,
+  buildChatbotPrompt: promptBuilder.buildChatbotPrompt
 };

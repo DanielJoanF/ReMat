@@ -17,6 +17,7 @@ const searchRoutes = require("./routes/search");
 const alertRoutes = require("./routes/alerts");
 const analyticsRoutes = require("./routes/analytics");
 const circularReportRoutes = require("./routes/circularReports");
+const chatbotRoutes = require("./routes/chatbot");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -40,6 +41,7 @@ app.use("/search", searchRoutes);
 app.use("/alerts", alertRoutes);
 app.use("/analytics", analyticsRoutes);
 app.use("/circular-reports", circularReportRoutes);
+app.use("/chat", chatbotRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
