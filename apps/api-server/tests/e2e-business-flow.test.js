@@ -12,13 +12,18 @@ const { mockDb, mockGenerateEmbedding, mockIsAvailable } = vi.hoisted(() => {
       delete: vi.fn()
     },
     user: {
-      findUnique: vi.fn()
+      findUnique: vi.fn(),
+      update: vi.fn()
     },
     distributorProfile: {
-      findUnique: vi.fn()
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn()
     },
     consumerProfile: {
-      findUnique: vi.fn()
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn()
     },
     material: {
       findMany: vi.fn(),
@@ -75,6 +80,13 @@ const { mockDb, mockGenerateEmbedding, mockIsAvailable } = vi.hoisted(() => {
       create: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn()
+    },
+    banner: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn()
     },
     $transaction: vi.fn((promises) => Promise.all(promises)),
     $queryRawUnsafe: vi.fn(),
@@ -928,6 +940,98 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
 
       expect(res.status).toBe(201);
       expect(res.body.data.assistantMessage.content).toContain("ekonomi sirkular");
+    });
+  });
+
+  describe("Phase 10: Admin Panel & Moderation Tools", () => {
+    it("Admin suspends an active material -> status = REJECTED", async () => {
+      mockDb.material.findUnique.mockResolvedValue({
+        id: "mat-100",
+        title: "Cacahan PET",
+        description: "Botol PET",
+        status: "ACTIVE"
+      });
+      mockDb.material.update.mockResolvedValue({
+        id: "mat-100",
+        status: "REJECTED"
+      });
+
+      const res = await request(app)
+        .patch("/admin/materials/mat-100/suspend")
+        .set(adminHeaders)
+        .send({ reason: "Sertifikat MSDS palsu" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.status).toBe("REJECTED");
+    });
+
+    it("Admin verifies distributor profile -> isVerified = true", async () => {
+      mockDb.distributorProfile.findUnique.mockResolvedValue({
+        id: "dist-prof-1",
+        userId: "dist-user-1",
+        isVerified: false
+      });
+      mockDb.distributorProfile.update.mockResolvedValue({
+        id: "dist-prof-1",
+        isVerified: true
+      });
+      mockDb.user.update.mockResolvedValue({});
+
+      const res = await request(app)
+        .patch("/admin/distributors/dist-prof-1/verify")
+        .set(adminHeaders)
+        .send({ isVerified: true });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.isVerified).toBe(true);
+    });
+
+    it("Admin manages promotional banners (create & list)", async () => {
+      mockDb.banner.create.mockResolvedValue({
+        id: "banner-1",
+        title: "Promo Daur Ulang Plastik",
+        imageUrl: "https://example.com/banner.jpg",
+        isActive: true,
+        order: 1
+      });
+
+      const createRes = await request(app)
+        .post("/admin/banners")
+        .set(adminHeaders)
+        .send({ title: "Promo Daur Ulang Plastik", imageUrl: "https://example.com/banner.jpg" });
+
+      expect(createRes.status).toBe(201);
+      expect(createRes.body.data.title).toBe("Promo Daur Ulang Plastik");
+
+      mockDb.banner.findMany.mockResolvedValue([
+        { id: "banner-1", title: "Promo Daur Ulang Plastik", isActive: true }
+      ]);
+
+      const publicRes = await request(app).get("/banners");
+      expect(publicRes.status).toBe(200);
+      expect(publicRes.body.data.length).toBe(1);
+    });
+
+    it("Admin fetches AI quality monitoring logs", async () => {
+      mockDb.materialAlert.findMany.mockResolvedValue([
+        { id: "alert-1", queryText: "limbah kaca", locationFilter: "Semarang", createdAt: new Date() }
+      ]);
+      mockDb.chatMessage.findMany.mockResolvedValue([]);
+
+      const res = await request(app)
+        .get("/admin/ai-monitoring")
+        .set(adminHeaders);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.failedSearchAlerts.length).toBe(1);
+    });
+
+    it("Non-admin access is blocked on /admin/* routes (403)", async () => {
+      const res = await request(app)
+        .get("/admin/distributors")
+        .set(dist1Headers);
+
+      expect(res.status).toBe(403);
     });
   });
 });
