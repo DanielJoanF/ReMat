@@ -7,7 +7,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Camera } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/contexts/auth-context';
 import { getData, putData } from '@/lib/api-client';
+import { ImageUploader } from '@/components/materials/image-uploader';
 
 const materialSchema = z.object({
   nama: z.string().min(1, 'Nama material wajib diisi'),
@@ -43,6 +44,7 @@ interface Material {
   quantity: number;
   location: string;
   status: string;
+  documents?: { id: string; type: string; fileUrl: string }[];
 }
 
 const gradeOptions = [
@@ -67,6 +69,7 @@ export default function EditMaterialPage() {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [material, setMaterial] = useState<Material | null>(null);
+  const [photos, setPhotos] = useState<{ id: string; type: string; fileUrl: string }[]>([]);
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<MaterialFormData>({
     resolver: zodResolver(materialSchema),
@@ -83,8 +86,9 @@ export default function EditMaterialPage() {
           getData<{ data: Category[] }>('/categories'),
         ]);
         const mat = matRes.data;
-        setMaterial(mat);
-        setCategories(catRes.data || []);
+                setMaterial(mat);
+                setPhotos((mat.documents || []).filter((d) => d.type === 'PHOTO'));
+                setCategories(catRes.data || []);
         reset({
           nama: mat.title, deskripsi: mat.description, kategori: mat.categoryId,
           grade: mat.qualityGrade ?? '', harga: mat.price, unit: mat.unit, stok: mat.quantity, lokasi: mat.location,
@@ -170,8 +174,16 @@ export default function EditMaterialPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <Card>
-            <CardHeader><CardTitle>Informasi Dasar</CardTitle></CardHeader>
+                  <Card>
+                    <CardHeader><CardTitle>Foto Material</CardTitle></CardHeader>
+                    <CardContent>
+                      <p className="mb-4 text-sm text-gray-500">Kelola foto produk material ini.</p>
+                      <ImageUploader materialId={id} photos={photos} onChange={setPhotos} />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader><CardTitle>Informasi Dasar</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <Input label="Nama Material" required placeholder="Contoh: Botol PET Bening" error={errors.nama?.message} {...register('nama')} />
               <div className="space-y-1">

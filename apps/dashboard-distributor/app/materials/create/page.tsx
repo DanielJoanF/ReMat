@@ -15,7 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/contexts/auth-context';
-import { getData, postData } from '@/lib/api-client';
+import { getData, postData, uploadFile } from '@/lib/api-client';
+import { PhotoPicker } from '@/components/materials/photo-picker';
 
 const materialSchema = z.object({
   nama: z.string().min(1, 'Nama material wajib diisi'),
@@ -51,6 +52,7 @@ export default function CreateMaterialPage() {
   const { isReady } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [photos, setPhotos] = useState<File[]>([]);
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<MaterialFormData>({
     resolver: zodResolver(materialSchema),
@@ -68,18 +70,32 @@ export default function CreateMaterialPage() {
       }
     };
     fetchCategories();
-  }, [isReady]);
+  }, [isReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name || c.label || '' }));
 
   const onSubmit = async (data: MaterialFormData) => {
     try {
       setSubmitting(true);
-      await postData('/materials', {
-        name: data.nama, description: data.deskripsi, categoryId: data.kategori,
-        grade: data.grade, price: data.harga, unit: data.unit, stock: data.stok,
-        location: data.lokasi, status: 'DRAFT',
+      const created = await postData<{ data: { id: string } }>('/materials', {
+        title: data.nama, description: data.deskripsi, categoryId: data.kategori,
+        qualityGrade: data.grade, price: data.harga, unit: data.unit,
+        quantity: data.stok, location: data.lokasi,
       });
+      const materialId = created.data?.id;
+
+      // Upload foto yang dipilih setelah material tersimpan (draf).
+      // Gagal upload hanya menampilkan toast — tidak mengubah data material.
+      if (materialId) {
+        for (const file of photos) {
+          try {
+            await uploadFile(`/materials/${materialId}/documents`, file, 'PHOTO');
+          } catch {
+            toast({ type: 'error', message: `Foto "${file.name}" gagal diupload.` });
+          }
+        }
+      }
+
       toast({ type: 'success', message: 'Material berhasil disimpan sebagai draf' });
       router.push('/materials');
     } catch (err) {
@@ -128,6 +144,14 @@ export default function CreateMaterialPage() {
                 <Input label="Stok" required type="number" placeholder="0" error={errors.stok?.message} {...register('stok')} />
                 <Input label="Lokasi" required placeholder="Contoh: Jakarta Selatan" error={errors.lokasi?.message} {...register('lokasi')} />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle>Foto Material</CardTitle></CardHeader>
+            <CardContent>
+              <p className="mb-4 text-sm text-gray-500">Upload foto produk (opsional). Foto diunggah setelah material tersimpan.</p>
+              <PhotoPicker files={photos} onChange={setPhotos} />
             </CardContent>
           </Card>
 
