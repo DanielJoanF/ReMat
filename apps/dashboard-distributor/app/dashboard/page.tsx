@@ -22,36 +22,67 @@ import {
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { SkeletonCard, SkeletonText } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/contexts/auth-context';
 import { getData } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 
-interface DashboardData {
-  kpis: {
-    revenue: { value: number; trend: number };
-    totalTransactions: { value: number; trend: number };
-    inventoryValue: { value: number; trend: number };
-    activeStatus: { value: number; trend: number };
+interface DashboardMetrics {
+  companyName: string;
+  distributorId: string;
+  summary: {
+    completedRevenue: number;
+    pendingRevenue: number;
+    totalTransactions: number;
+    activeMaterials: number;
+    draftMaterials: number;
+    estimatedInventoryValue: number;
   };
-  revenueChart: { month: string; revenue: number }[];
-  statusBreakdown: { name: string; value: number; color: string }[];
-  aiInsight: string;
+  transactionBreakdown: Record<string, number>;
+  topSellingMaterials: { title: string; totalQuantity: number; totalRevenue: number }[];
+  categoryBreakdown: Record<string, { count: number; totalValue: number }>;
+}
+
+interface DashboardResponse {
+  data: {
+    metrics: DashboardMetrics;
+    aiSummary: string | null;
+    fallbackMessage: string | null;
+  };
+}
+
+interface KpiItem {
+  label: string;
+  value: string;
+  trend: number | null;
+  icon: React.ElementType;
+  iconBg: string;
+  iconColor: string;
 }
 
 export default function DashboardPage() {
   const { toast } = useToast();
+  const { isReady } = useAuth();
   const toastRef = useRef(toast);
   useEffect(() => { toastRef.current = toast; }, [toast]);
 
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Wait until AuthProvider has written the user identity to localStorage,
+    // so the API request carries the correct x-user-id / x-user-role headers.
+    if (!isReady) return;
     const fetchDashboard = async () => {
       try {
         setLoading(true);
-        const response = await getData<DashboardData>('/analytics/dashboard');
-        setData(response);
+        const response = await getData<DashboardResponse>('/analytics/dashboard');
+        setMetrics(response.data?.metrics ?? null);
       } catch (error) {
         toastRef.current({
           type: 'error',
@@ -62,38 +93,38 @@ export default function DashboardPage() {
       }
     };
     fetchDashboard();
-  }, []);
+  }, [isReady]);
 
-  const kpis = data
+  const kpis: KpiItem[] = metrics
     ? [
         {
-          label: 'Tingkat Pengalihan Limbah',
-          value: `${data.kpis.activeStatus.value}%`,
-          trend: data.kpis.activeStatus.trend,
+          label: 'Material Aktif',
+          value: metrics.summary.activeMaterials.toLocaleString('id-ID'),
+          trend: null,
           icon: Recycle,
           iconBg: 'bg-[#E8F5E9]',
           iconColor: 'text-[#1B5E20]',
         },
         {
-          label: 'Penghematan Karbon',
-          value: `${(data.kpis.inventoryValue.value / 1000).toLocaleString('id-ID')} ton`,
-          trend: data.kpis.inventoryValue.trend,
+          label: 'Nilai Inventori',
+          value: `${(metrics.summary.estimatedInventoryValue / 1_000_000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} jt`,
+          trend: null,
           icon: Leaf,
           iconBg: 'bg-[#E8F5E9]',
           iconColor: 'text-[#1B5E20]',
         },
         {
           label: 'Total Pendapatan',
-          value: formatCurrency(data.kpis.revenue.value),
-          trend: data.kpis.revenue.trend,
+          value: formatCurrency(metrics.summary.completedRevenue),
+          trend: null,
           icon: Wallet,
           iconBg: 'bg-[#EFF4FF]',
           iconColor: 'text-[#0B1C30]',
         },
         {
-          label: 'Skor Sirkular',
-          value: data.kpis.totalTransactions.value.toLocaleString('id-ID'),
-          trend: data.kpis.totalTransactions.trend,
+          label: 'Total Transaksi',
+          value: metrics.summary.totalTransactions.toLocaleString('id-ID'),
+          trend: null,
           icon: ArrowUpRight,
           iconBg: 'bg-[#EFF4FF]',
           iconColor: 'text-[#0B1C30]',
@@ -101,7 +132,20 @@ export default function DashboardPage() {
       ]
     : [];
 
-  const recentListings = data?.statusBreakdown?.slice(0, 3) ?? [];
+  const revenueChart =
+    metrics && Object.keys(metrics.categoryBreakdown).length > 0
+      ? Object.entries(metrics.categoryBreakdown).map(([name, cat]) => ({
+          month: name,
+          revenue: cat.totalValue,
+        }))
+      : [];
+
+  const recentListings =
+    metrics?.topSellingMaterials?.map((m) => ({
+      name: m.title,
+      value: formatCurrency(m.totalRevenue),
+      color: '#065F46',
+    })) ?? [];
 
   return (
     <DashboardLayout>
@@ -159,11 +203,11 @@ export default function DashboardPage() {
               </select>
             </div>
             <div className="h-[260px]">
-              {loading ? (
-                <SkeletonText lines={5} />
-              ) : data?.revenueChart && data.revenueChart.length > 0 ? (
+                          {loading ? (
+                            <SkeletonText lines={5} />
+                          ) : mounted && revenueChart.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.revenueChart} barCategoryGap="30%" margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <BarChart data={revenueChart} barCategoryGap="30%" margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                     <XAxis
                       dataKey="month"
@@ -183,10 +227,10 @@ export default function DashboardPage() {
                       contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '12px', padding: '8px 12px' }}
                     />
                     <Bar dataKey="revenue" radius={[4, 4, 0, 0]} fill="#94A3B8">
-                      {data.revenueChart.map((entry, index) => (
+                      {revenueChart.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={index === data.revenueChart.length - 1 ? '#065F46' : '#94A3B8'}
+                          fill={index === revenueChart.length - 1 ? '#065F46' : '#94A3B8'}
                         />
                       ))}
                     </Bar>

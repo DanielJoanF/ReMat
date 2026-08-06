@@ -17,6 +17,7 @@ import {
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/contexts/auth-context';
 import { useSearchParams } from 'next/navigation';
 
 import { getData, patchData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
@@ -34,7 +35,8 @@ type OrderStatus =
 
 interface OrderMaterial {
   id: string;
-  name: string;
+  title: string;
+  unit?: string;
 }
 
 interface OrderItem {
@@ -43,7 +45,13 @@ interface OrderItem {
   quantity: number;
   unit: string;
   unitPrice: number;
-  totalPrice: number;
+  subtotal: number;
+}
+
+interface OrderConsumer {
+  id?: string;
+  name?: string;
+  email?: string;
 }
 
 interface Order {
@@ -53,15 +61,17 @@ interface Order {
   createdAt: string;
   trackingNumber?: string;
   totalAmount: number;
-  buyerName?: string;
+  consumer?: OrderConsumer | null;
 }
 
 interface OrdersResponse {
   data: Order[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 // ─── Empty fallback (no mock data — always render from API) ─────────────
@@ -107,6 +117,7 @@ function OrdersPageInner() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
   const { toast } = useToast();
+  const { isReady } = useAuth();
   const toastRef = useRef(toast);
   useEffect(() => { toastRef.current = toast; }, [toast]);
 
@@ -136,19 +147,28 @@ function OrdersPageInner() {
       if (activeTab !== 'SEMUA') params.status = activeTab;
 
       const result = await getData<OrdersResponse>('/transactions/orders', params);
-      setOrders(result.data ?? EMPTY_ORDERS);
-      setTotalItems(result.total ?? 0);
-      setTotalPages(result.totalPages ?? 1);
-    } catch {
-      setOrders(EMPTY_ORDERS);
-      setTotalItems(0);
-      setTotalPages(1);
+            setOrders(result.data ?? EMPTY_ORDERS);
+            setTotalItems(result.pagination?.total ?? 0);
+            setTotalPages(result.pagination?.totalPages ?? 1);
+          } catch (error: unknown) {
+            setOrders(EMPTY_ORDERS);
+            setTotalItems(0);
+            setTotalPages(1);
+            toastRef.current({
+              type: 'error',
+              message: error instanceof Error ? error.message : 'Gagal memuat pesanan',
+            });
     } finally {
       setLoading(false);
     }
   }, [page, searchQuery, activeTab, refreshKey]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => {
+    // Wait until AuthProvider has written the user identity to localStorage,
+    // so the API request carries the correct x-user-id / x-user-role headers.
+    if (!isReady) return;
+    fetchOrders();
+  }, [isReady, fetchOrders]);
 
   // Sync local searchQuery with URL search param (header search)
   useEffect(() => {
@@ -180,7 +200,8 @@ function OrdersPageInner() {
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      if (!order.id.toLowerCase().includes(q) && !(order.buyerName || '').toLowerCase().includes(q)) return false;
+      const buyer = order.consumer?.name ?? '';
+      if (!order.id.toLowerCase().includes(q) && !buyer.toLowerCase().includes(q)) return false;
     }
     return true;
   });
@@ -318,7 +339,7 @@ function OrdersPageInner() {
                   </tr>
                 ) : (
                   filteredOrders.map((order) => {
-                    const materialName = order.items?.[0]?.material?.name || '-';
+                    const materialName = order.items?.[0]?.material?.title || '-';
                     const qty = order.items?.[0]?.quantity || 0;
                     const unit = order.items?.[0]?.unit || 'kg';
                     const displayQty = qty >= 1000 && unit === 'kg' ? `${(qty/1000).toFixed(1).replace('.0', '')} Ton` : `${qty} ${unit === 'kg' ? 'Kg' : unit}`;
@@ -329,7 +350,7 @@ function OrdersPageInner() {
                           {order.id.startsWith('#') ? order.id : `#ORD-${order.id.slice(0,4)}`}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-[#0B1C30]">{order.buyerName || 'Konsumen Umum'}</div>
+                          <div className="font-semibold text-[#0B1C30]">{order.consumer?.name || 'Konsumen Umum'}</div>
                           <div className="text-[11px] text-gray-500 mt-0.5">{formatDate(order.createdAt).replace('2023', '23').split(' ').slice(0, 3).join(' ')}</div>
                         </td>
                         <td className="py-3 px-4 text-gray-700 font-medium">
