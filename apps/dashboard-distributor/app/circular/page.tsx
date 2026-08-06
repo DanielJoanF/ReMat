@@ -18,7 +18,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface CircularReport {
   id: string; period: string; circularScore: number;
-  wasteDiversionRate: number; carbonSaving?: number; carbonSavingKg?: number; economicValue: number; createdAt: string;
+  wasteDiversionRate: number; carbonSaving?: number; carbonSavingKg?: number; economicValue: number; createdAt?: string; generatedAt?: string;
 }
 interface ReportDetail extends CircularReport {
   description?: string; materials?: { name: string; diverted: number; unit: string }[];
@@ -40,9 +40,14 @@ function fmtPeriod(p: string) {
   return `${MONTHS[parseInt(m, 10) - 1] ?? m} ${y}`;
 }
 
+function getReportDate(r: CircularReport): Date {
+  const d = r.generatedAt || r.createdAt;
+  return d ? new Date(d) : new Date(0);
+}
+
 function latestKPIs(r: CircularReport[]) {
   if (!r?.length) return { wdr: 0, cs: 0, score: 0, ev: 0 };
-  const l = r.reduce((a, b) => new Date(a.createdAt) > new Date(b.createdAt) ? a : b);
+  const l = r.reduce((a, b) => getReportDate(a) > getReportDate(b) ? a : b);
   return {
     wdr: l.wasteDiversionRate ?? 0,
     cs: l.carbonSaving ?? l.carbonSavingKg ?? 0,
@@ -180,7 +185,7 @@ export default function CircularReportPage() {
                             Skor: <span className="font-semibold text-[#1B5E20]">{r.circularScore}</span>
                           </span>
                           <span className="text-xs text-gray-400">•</span>
-                          <span className="text-xs text-gray-500">{formatDate(r.createdAt)}</span>
+                          <span className="text-xs text-gray-500">{formatDate(r.generatedAt || r.createdAt)}</span>
                         </div>
                       </div>
                     </div>
@@ -295,7 +300,7 @@ function ReportDetailModal({ isOpen, onClose, reportId }: {
               </div>
             </div>
           )}
-          <div className="text-xs text-gray-400 pt-2 border-t border-gray-100">Dibuat: {formatDate(detail.createdAt)}</div>
+          <div className="text-xs text-gray-400 pt-2 border-t border-gray-100">Dibuat: {formatDate(detail.generatedAt || detail.createdAt)}</div>
         </div>
       ) : (
         <p className="text-sm text-gray-500 text-center py-8">Data tidak tersedia.</p>
