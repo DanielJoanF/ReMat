@@ -70,6 +70,7 @@ web_modules/
 .next/
 .turbo/
 out/
+.turbo
 
 # Nuxt.js build project dependency folder (https://nuxtjs.org/faq/github-actions/)
 .nuxt

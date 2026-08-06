@@ -1,17 +1,51 @@
-/**
- * @remat/ai-core — LLM Service
- *
- * Orchestrates calls to LLM APIs (OpenAI GPT / Gemini) for narrative text generation.
- * Handles timeouts, fallback, and API key availability checks.
- *
- * Environment variables:
- *   OPENAI_API_KEY — OpenAI API key
- *   LLM_MODEL      — Optional, defaults to "gpt-4o-mini"
- */
 const { OpenAI } = require("openai");
 
-const DEFAULT_LLM_MODEL = "gpt-4o-mini";
-const TIMEOUT_MS = 10000; // 10s timeout
+const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
+const DEFAULT_OPENROUTER_MODEL = "google/gemini-2.0-flash-exp:free";
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+const TIMEOUT_MS = 15000; // 15s timeout
+
+const getLlmClient = () => {
+  const groqKey = process.env.GROQ_API_KEY;
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+
+  // 1. Primary: Groq API
+  if (groqKey) {
+    return {
+      client: new OpenAI({
+        apiKey: groqKey,
+        baseURL: "https://api.groq.com/openai/v1"
+      }),
+      model: process.env.LLM_MODEL || DEFAULT_GROQ_MODEL
+    };
+  }
+
+  // 2. Fallback: OpenRouter API
+  if (openrouterKey) {
+    return {
+      client: new OpenAI({
+        apiKey: openrouterKey,
+        baseURL: "https://openrouter.ai/api/v1",
+        defaultHeaders: {
+          "HTTP-Referer": "https://remat.id",
+          "X-Title": "ReMat Platform"
+        }
+      }),
+      model: process.env.LLM_MODEL || DEFAULT_OPENROUTER_MODEL
+    };
+  }
+
+  // 3. Fallback: OpenAI API
+  if (openaiKey) {
+    return {
+      client: new OpenAI({ apiKey: openaiKey }),
+      model: process.env.LLM_MODEL || DEFAULT_OPENAI_MODEL
+    };
+  }
+
+  throw new Error("[ai-core] Neither GROQ_API_KEY, OPENROUTER_API_KEY, nor OPENAI_API_KEY environment variable is set.");
+};
 
 /**
  * Generate narrative response from system & user prompt.
@@ -26,19 +60,13 @@ const generateText = async (systemPrompt, userPrompt) => {
     return global.generateTextMock(systemPrompt, userPrompt);
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("[ai-core] OPENAI_API_KEY environment variable is not set.");
-  }
-
-  const openai = new OpenAI({ apiKey });
-  const model = process.env.LLM_MODEL || DEFAULT_LLM_MODEL;
+  const { client, model } = getLlmClient();
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const response = await openai.chat.completions.create(
+    const response = await client.chat.completions.create(
       {
         model,
         messages: [
@@ -46,7 +74,7 @@ const generateText = async (systemPrompt, userPrompt) => {
           { role: "user", content: userPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 800
       },
       { signal: controller.signal }
     );
@@ -57,18 +85,17 @@ const generateText = async (systemPrompt, userPrompt) => {
   }
 };
 
-/**
- * Check if LLM service is configured and available.
- */
 const isLlmAvailable = () => {
   if (global.isLlmAvailableMock !== undefined) {
     return global.isLlmAvailableMock;
   }
-  return !!process.env.OPENAI_API_KEY;
+  return !!(process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY);
 };
 
 module.exports = {
   generateText,
   isLlmAvailable,
-  DEFAULT_LLM_MODEL
+  DEFAULT_GROQ_MODEL,
+  DEFAULT_OPENROUTER_MODEL,
+  DEFAULT_OPENAI_MODEL
 };

@@ -1,11 +1,3 @@
-/**
- * @remat/ai-core — AI Core Services
- *
- * Central export for all AI-related utilities:
- * - Embedding generation (vector search)
- * - LLM narrative text generation
- * - Prompt Builder for structured RAG & dashboard insights
- */
 const embedding = require("./embedding");
 const llm = require("./llm");
 const promptBuilder = require("./promptBuilder");
