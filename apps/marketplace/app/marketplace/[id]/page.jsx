@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,36 +22,7 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import ChatWidget from "@/components/consumer/ChatWidget";
 import { useAuth } from "@/lib/auth-context";
 import useCartStore from "@/store/cart";
-
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-const MOCK_MATERIAL = {
-  id: "1",
-  title: "Biji Plastik PET Grade A (Clear)",
-  quality_grade: "Grade A",
-  quantity: 500,
-  unit: "kg",
-  price: 12500,
-  location: "Gudang Industri Rungkut, Surabaya",
-  status: "active",
-  description: `Biji plastik PET (Polyethylene Terephthalate) grade A clear berasal dari proses daur ulang botol air minum dan kemasan minuman berkualitas tinggi. Material ini telah melalui proses sortasi, pencucian, dan penggilingan secara higienis.
-
-Cocok digunakan untuk produksi kembali kemasan makanan/minuman, serat polyester, dan berbagai produk plastik premium. Kadar kontaminan sangat rendah (<0.5%) dan telah memenuhi standar industri.`,
-  category: { id: "1", name: "Plastik PET" },
-  requires_msds: true,
-  distributor: {
-    id: "d1",
-    companyName: "PT. EcoRecycle Jaya",
-    city: "Surabaya",
-    isVerified: true,
-    rating: 4.8,
-    totalTransactions: 127,
-  },
-  documents: [
-    { id: "doc1", type: "certificate", label: "Sertifikat Kualitas ISO 9001" },
-    { id: "doc2", type: "msds", label: "Material Safety Data Sheet" },
-    { id: "doc3", type: "photo", label: "Foto Material" },
-  ],
-};
+import { api } from "@/lib/api";
 
 function formatPrice(price, unit) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(price) + ` / ${unit}`;
@@ -68,7 +40,58 @@ export default function MaterialDetailPage() {
 
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
-  const material = MOCK_MATERIAL; // In production: fetch by params.id
+  const [material, setMaterial] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchDetail = async () => {
+      if (!params?.id) return;
+      setIsLoading(true);
+      try {
+        const dbMat = await api.getMaterialById(params.id);
+        if (active) {
+          setMaterial({
+            ...dbMat,
+            quality_grade: dbMat.qualityGrade || "Grade A",
+            isVerified: dbMat.distributor?.isVerified || false,
+            distributorName: dbMat.distributor?.companyName || "Distributor",
+            imageUrl: dbMat.documents?.find(doc => doc.type === "PHOTO")?.fileUrl || null,
+            unit: dbMat.unit?.toLowerCase() || "kg",
+            status: dbMat.status?.toLowerCase() || "active",
+            distributor: {
+              ...dbMat.distributor,
+              rating: dbMat.distributor?.rating || 4.8,
+              totalTransactions: dbMat.distributor?.totalTransactions || 120,
+            },
+            documents: (dbMat.documents || []).map((doc, idx) => ({
+              id: doc.id,
+              type: doc.type?.toLowerCase() || "photo",
+              label: doc.type === "PHOTO" ? "Foto Material" : doc.type === "MSDS" ? "Material Safety Data Sheet" : `Dokumen Pendukung ${idx + 1}`
+            }))
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch material details:", err);
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchDetail();
+    return () => {
+      active = false;
+    };
+  }, [params?.id]);
+
+  if (isLoading || !material) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="w-8 h-8 border-2 border-remat-green border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const isConsumer = role === "CONSUMER";
   const canBuy = isConsumer && material.status === "active";
@@ -98,7 +121,16 @@ export default function MaterialDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Image + Grade Badge */}
             <div className="relative bg-gradient-to-br from-remat-green-light to-remat-blue rounded-card h-80 flex items-center justify-center overflow-hidden">
-              <Package className="w-24 h-24 text-remat-green/20" />
+              {material.imageUrl ? (
+                <Image
+                  src={material.imageUrl}
+                  alt={material.title}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <Package className="w-24 h-24 text-remat-green/20" />
+              )}
               <div className="absolute top-4 left-4 bg-remat-green text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-2">
                 <Award className="w-4 h-4" /> Verified {material.quality_grade}
               </div>

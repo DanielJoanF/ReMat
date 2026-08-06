@@ -133,80 +133,129 @@ async function main() {
   console.log("Users & Profiles created (1 Admin, 8 Distributors, 12 Consumers).");
 
   // ==========================================
-  // 3. CATEGORIES (Parent: 8, Total: ~28)
+  // 3. CATEGORIES (Total: 10)
   // ==========================================
-  const categoriesDef = {
-    "Plastik Industri": ["PET", "HDPE", "LDPE", "PP", "PVC", "ABS"],
-    "Logam & Alumunium": ["Aluminium Scrap", "Copper Wire", "Stainless Steel", "Iron Heavy", "Brass Fittings"],
-    "Kertas & Karton": ["Cardboard Box", "HVS Shredded", "Duplex Board", "Kraft Paper"],
-    "Kaca & Sisa Botol": ["Clear Glass Cullet", "Green Glass Cullet", "Brown Glass Cullet"],
-    "Tekstil & Kain Majun": ["Cotton Waste", "Polyester Fabric", "Denim Offcuts"],
-    "Karet & Ban Bekas": ["Rubber Granules", "Truck Tire Scrap"],
-    "Elektronik & E-Waste": ["PCB Circuit Board", "Copper Cable Stripped", "Electronic Components"],
-    "Limbah Organik": ["Organic Compost Base", "Agricultural Waste"]
-  };
+  const categoriesDef = [
+    { name: "Plastik", slug: "plastik" },
+    { name: "Kertas & Kardus", slug: "kertas-kardus" },
+    { name: "Logam", slug: "logam" },
+    { name: "Kaca", slug: "kaca" },
+    { name: "Elektronik", slug: "elektronik" },
+    { name: "Tekstil", slug: "tekstil" },
+    { name: "Limbah Organik", slug: "limbah-organik" },
+    { name: "Minyak Jelantah", slug: "minyak-jelantah" },
+    { name: "Kayu", slug: "kayu" },
+    { name: "Makanan", slug: "makanan" }
+  ];
 
-  const createdSubCategories = [];
+  const createdCategories = [];
 
-  for (const [parentName, children] of Object.entries(categoriesDef)) {
-    const parentCat = await prisma.category.create({
+  for (const cat of categoriesDef) {
+    const createdCat = await prisma.category.create({
       data: {
-        name: parentName,
-        slug: parentName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        name: cat.name,
+        slug: cat.slug,
       },
     });
-
-    for (const childName of children) {
-      const childCat = await prisma.category.create({
-        data: {
-          name: childName,
-          slug: `${parentCat.slug}-${childName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`,
-          parentId: parentCat.id,
-        },
-      });
-      createdSubCategories.push(childCat);
-    }
+    createdCategories.push(createdCat);
   }
 
-  console.log(`Categories created (Total: ${createdSubCategories.length + 8} items).`);
+  console.log(`Categories created (Total: ${createdCategories.length} items).`);
 
   // ==========================================
-  // 4. MATERIALS & EMBEDDINGS (Total: 45)
+  // 4. MATERIALS & EMBEDDINGS (Total: 47)
   // ==========================================
-  const materialTitles = [
-    "Cacahan Plastik PET Bening Grade A", "Cacahan PET Warna Mix", "Bijih Plastik HDPE Putih", "HDPE Biru Crush", "HDPE Hitam Industri",
-    "Pellet PP Injection Grade", "LDPE Film Bening Press", "Pipa PVC Scrap Potongan", "Cacahan ABS Plastik Otomotif", "Scrap Alumunium Potongan Pabrik",
-    "Kawat Tembaga Stripped Super", "Scrap Besi Berat H-Beam", "Potongan Stainless Steel 304", "Kardus Bekas Press Baled", "Kertas Mix Offcut",
-    "Cullet Kaca Bening Siap Lebur", "Kain Majun Katun Putih", "Sisa Kain Polyester Roll", "Scrap Kuningan Brass Fitting", "Kertas Duplex Sisa Cetak",
-    "Kertas Kraft Shredded", "Botol Kaca Bening Utuh", "Botol Kaca Hijau Pecahan", "Botol Kaca Coklat Cacahan", "Limbah Kain Denim Cut-offs",
-    "Karet Ban Truk Shredded", "Ban Bekas Alat Berat", "Scrap PCB Server Grade A", "Kabel Tembaga Cuci Bersih", "Komponen Elektronik Bekas Mix",
-    "Kertas HVS Kantor Shredded", "Plastik LDPE Kantong Baled", "Karung PP Woven Scrap", "Plastik ABS Elektronik", "Drum HDPE Bekas Kimia Clean",
-    "Kaleng Alumunium Press Baled", "Plat Besi Scrap Sisa Potong", "Pipa Stainless 316 Bekas", "Fitting Kuningan Bekas Industri", "Bahan Kompos Organik Matang",
-    "Limbah Benang Katun Tekstil", "Polyester Offcut Garment", "Papan PCB Komputer Bekas", "Cullet Kaca Mix Warna", "Tire Rubber Powder Mesh 40"
+  const materialsToSeed = [
+    // Plastik (Index 0)
+    { title: "Cacahan Plastik PET Bening Grade A", catIdx: 0, unit: "KG" },
+    { title: "Cacahan PET Warna Mix", catIdx: 0, unit: "KG" },
+    { title: "Bijih Plastik HDPE Putih", catIdx: 0, unit: "KG" },
+    { title: "HDPE Biru Crush", catIdx: 0, unit: "KG" },
+    { title: "HDPE Hitam Industri", catIdx: 0, unit: "KG" },
+    { title: "Pellet PP Injection Grade", catIdx: 0, unit: "KG" },
+    { title: "LDPE Film Bening Press", catIdx: 0, unit: "KG" },
+    { title: "Pipa PVC Scrap Potongan", catIdx: 0, unit: "KG" },
+    { title: "Cacahan ABS Plastik Otomotif", catIdx: 0, unit: "KG" },
+    { title: "Plastik Kemasan Sisa Pabrik", catIdx: 0, unit: "KG" },
+    
+    // Kertas & Kardus (Index 1)
+    { title: "Kardus Bekas Box Packing Press", catIdx: 1, unit: "KG" },
+    { title: "Kertas HVS Kantor Potongan", catIdx: 1, unit: "KG" },
+    { title: "Koran Bekas Ikat Bersih", catIdx: 1, unit: "KG" },
+    { title: "Buku Bekas Campuran", catIdx: 1, unit: "KG" },
+    { title: "Kertas Duplex Sisa Cetak", catIdx: 1, unit: "KG" },
+    { title: "Kertas Kraft Shredded", catIdx: 1, unit: "KG" },
+    
+    // Logam (Index 2)
+    { title: "Scrap Alumunium Potongan Pabrik", catIdx: 2, unit: "TON" },
+    { title: "Kawat Tembaga Stripped Super", catIdx: 2, unit: "KG" },
+    { title: "Scrap Besi Berat H-Beam", catIdx: 2, unit: "TON" },
+    { title: "Potongan Stainless Steel 304", catIdx: 2, unit: "KG" },
+    { title: "Scrap Kuningan Brass Fitting", catIdx: 2, unit: "KG" },
+    { title: "Kaleng Alumunium Press Baled", catIdx: 2, unit: "TON" },
+    { title: "Plat Besi Scrap Sisa Potong", catIdx: 2, unit: "TON" },
+    
+    // Kaca (Index 3)
+    { title: "Cullet Kaca Bening Siap Lebur", catIdx: 3, unit: "TON" },
+    { title: "Botol Kaca Bening Utuh", catIdx: 3, unit: "PCS" },
+    { title: "Botol Kaca Hijau Pecahan", catIdx: 3, unit: "TON" },
+    { title: "Botol Kaca Coklat Cacahan", catIdx: 3, unit: "TON" },
+    
+    // Elektronik (Index 4)
+    { title: "HP Bekas Rusak Mainboard", catIdx: 4, unit: "PCS" },
+    { title: "Laptop Bekas Mati Part", catIdx: 4, unit: "PCS" },
+    { title: "Kabel Tembaga Kupas", catIdx: 4, unit: "KG" },
+    { title: "Charger Adapter Bekas Mix", catIdx: 4, unit: "PCS" },
+    { title: "Scrap PCB Server Grade A", catIdx: 4, unit: "KG" },
+    
+    // Tekstil (Index 5)
+    { title: "Pakaian Bekas Layak Pakai", catIdx: 5, unit: "KG" },
+    { title: "Kain Perca Katun Putih", catIdx: 5, unit: "KG" },
+    { title: "Sisa Denim Offcuts Garment", catIdx: 5, unit: "KG" },
+    { title: "Limbah Kain Denim Cut-offs", catIdx: 5, unit: "KG" },
+    
+    // Limbah Organik (Index 6)
+    { title: "Bahan Kompos Organik Matang", catIdx: 6, unit: "KG" },
+    { title: "Limbah Pertanian Sekam Padi", catIdx: 6, unit: "TON" },
+    { title: "Daun Kering Bahan Kompos", catIdx: 6, unit: "KG" },
+    
+    // Minyak Jelantah (Index 7)
+    { title: "Minyak Jelantah Rumah Tangga", catIdx: 7, unit: "LITER" },
+    { title: "Minyak Goreng Bekas UMKM", catIdx: 7, unit: "LITER" },
+    { title: "Minyak Jelantah Catering Clean", catIdx: 7, unit: "LITER" },
+    
+    // Kayu (Index 8)
+    { title: "Palet Kayu Pinus Bekas", catIdx: 8, unit: "PCS" },
+    { title: "Potongan Kayu Sisa Mebel", catIdx: 8, unit: "KG" },
+    { title: "Furnitur Kayu Bekas Kantor", catIdx: 8, unit: "PCS" },
+
+    // Makanan (Index 9)
+    { title: "Sisa Makanan Catering", catIdx: 9, unit: "KG" },
+    { title: "Sisa Sayur & Buah Supermarket", catIdx: 9, unit: "KG" }
   ];
 
   const units = ["TON", "KG", "LITER", "PCS"];
   const statuses = ["ACTIVE", "ACTIVE", "ACTIVE", "ACTIVE", "DRAFT", "SOLD_OUT"];
   const createdMaterials = [];
 
-  for (let i = 0; i < 45; i++) {
-    const title = materialTitles[i];
+  for (let i = 0; i < materialsToSeed.length; i++) {
+    const item = materialsToSeed[i];
     const distUser = createdDistributors[i % createdDistributors.length];
-    const category = createdSubCategories[i % createdSubCategories.length];
+    const category = createdCategories[item.catIdx];
     const status = statuses[i % statuses.length];
-    const unit = units[i % units.length];
+    const unit = item.unit;
 
     const mat = await prisma.material.create({
       data: {
         distributorId: distUser.distributorProfile.id,
         categoryId: category.id,
         materialCode: `MAT-${(i + 1).toString().padStart(3, '0')}`,
-        title: title,
-        description: `Stok material daur ulang ${title} berkualitas tinggi dari ${distUser.distributorProfile.companyName}, siap diolah kembali.`,
+        title: item.title,
+        description: `Stok material daur ulang ${item.title} berkualitas tinggi dari ${distUser.distributorProfile.companyName}, siap diolah kembali.`,
         qualityGrade: i % 2 === 0 ? "Grade A" : "Grade B",
         quantity: Math.floor(Math.random() * 50) + 5,
         unit: unit,
-        price: (Math.floor(Math.random() * 20) + 2) * 1000000,
+        price: (Math.floor(Math.random() * 20) + 2) * 10000,
         currency: "IDR",
         location: `${distUser.distributorProfile.city}, Indonesia`,
         latitude: distUser.distributorProfile.latitude,
@@ -229,7 +278,7 @@ async function main() {
     }
   }
 
-  console.log("45 Materials created.");
+  console.log(`${createdMaterials.length} Materials created.`);
 
   // ==========================================
   // 5. MATERIAL DOCUMENTS (Total: 90)
@@ -282,7 +331,7 @@ async function main() {
   const alertQueries = ["Cacahan PET Bening", "HDPE Granules", "Tembaga Stripped", "Alumunium Scrap", "Kardus Press", "Kaca Cullet", "Kain Majun", "Karet Ban Truk", "PCB Server", "Besi Berat"];
   for (let i = 0; i < 10; i++) {
     const consumer = createdConsumers[i % createdConsumers.length];
-    const category = createdSubCategories[i % createdSubCategories.length];
+    const category = createdCategories[i % createdCategories.length];
 
     await prisma.materialAlert.create({
       data: {

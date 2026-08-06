@@ -14,29 +14,13 @@ import {
 import MaterialCard from "@/components/ui/MaterialCard";
 import { CardGridSkeleton } from "@/components/ui/SkeletonLoader";
 import EmptyState from "@/components/ui/EmptyState";
+import { api } from "@/lib/api";
 
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-const MOCK_MATERIALS = [
-  { id: "1", title: "Biji Plastik PET Grade A (Clear)", quality_grade: "Grade A", quantity: 500, unit: "kg", price: 12500, location: "Surabaya", status: "active", isVerified: true, distributorName: "PT. EcoRecycle Jaya", category: { name: "Plastik PET" }, imageUrl: null },
-  { id: "2", title: "Scrap Besi H2 Campuran", quality_grade: "Grade B", quantity: 2000, unit: "kg", price: 4200, location: "Bekasi", status: "active", isVerified: true, distributorName: "CV. Logam Bersih", category: { name: "Logam Besi" }, imageUrl: null },
-  { id: "3", title: "Kertas Kardus Bekas (OCC)", quality_grade: "Grade A", quantity: 800, unit: "kg", price: 1800, location: "Jakarta", status: "active", isVerified: false, distributorName: "UD. Kertas Maju", category: { name: "Kertas Daur Ulang" }, imageUrl: null },
-  { id: "4", title: "HDPE Drum Plastik Bekas", quality_grade: "Grade B", quantity: 150, unit: "pcs", price: 85000, location: "Bandung", status: "active", isVerified: true, distributorName: "PT. Plastik Nusantara", category: { name: "Plastik HDPE" }, imageUrl: null },
-  { id: "5", title: "Aluminium Scrap Shredded", quality_grade: "Grade A", quantity: 1200, unit: "kg", price: 18000, location: "Semarang", status: "active", isVerified: true, distributorName: "PT. Metal Inti", category: { name: "Logam Aluminium" }, imageUrl: null },
-  { id: "6", title: "Kaca Botol Hijau Pecah", quality_grade: "Grade C", quantity: 3000, unit: "kg", price: 900, location: "Surabaya", status: "sold_out", isVerified: false, distributorName: "CV. Kaca Daur", category: { name: "Kaca Industri" }, imageUrl: null },
-  { id: "7", title: "Biji Plastik PP Clear Regrind", quality_grade: "Grade A", quantity: 700, unit: "kg", price: 9800, location: "Tangerang", status: "active", isVerified: true, distributorName: "PT. Polipropilena Prima", category: { name: "Plastik PP" }, imageUrl: null },
-  { id: "8", title: "Limbah Tekstil Katun", quality_grade: "Grade B", quantity: 400, unit: "kg", price: 5500, location: "Bandung", status: "active", isVerified: false, distributorName: "CV. Tekstil Recycle", category: { name: "Tekstil Bekas" }, imageUrl: null },
-  { id: "9", title: "Tembaga Wire Scrap", quality_grade: "Grade A", quantity: 200, unit: "kg", price: 65000, location: "Jakarta", status: "active", isVerified: true, distributorName: "PT. Copper International", category: { name: "Logam Tembaga" }, imageUrl: null },
-  { id: "10", title: "Ampas Tahu Kering (Pakan Ternak)", quality_grade: "Grade A", quantity: 1500, unit: "kg", price: 2500, location: "Semarang", status: "active", isVerified: true, distributorName: "Pabrik Tahu Sari Murni", category: { name: "Limbah Organik" }, imageUrl: null },
-  { id: "11", title: "Sisa makanan catering", quality_grade: "Grade A", quantity: 100, unit: "kg", price: 2500, location: "Jakarta", status: "active", isVerified: true, distributorName: "Catering Makanan Indonesia", category: { name: "Limbah Makanan" }, imageUrl: null },
+const FALLBACK_CATEGORIES = [
+  "Plastik", "Kertas & Kardus", "Logam", "Kaca", "Elektronik", "Tekstil", "Limbah Organik", "Minyak Jelantah", "Kayu", "Makanan"
 ];
 
-const CATEGORIES = [
-  "Plastik PET", "Plastik HDPE", "Plastik PP", "Logam Besi",
-  "Logam Aluminium", "Logam Tembaga", "Kertas Daur Ulang", "Kaca Industri", "Tekstil Bekas",
-  "Limbah Organik", "Limbah Makanan"
-];
-
-const LOCATIONS = ["Jakarta", "Surabaya", "Bandung", "Bekasi", "Semarang", "Tangerang", "Medan", "Makassar"];
+const FALLBACK_LOCATIONS = ["Jakarta", "Surabaya", "Bandung", "Bekasi", "Semarang", "Tangerang", "Medan", "Makassar"];
 const GRADES = ["Grade A", "Grade B", "Grade C"];
 const SORT_OPTIONS = [
   { value: "newest", label: "Terbaru" },
@@ -49,8 +33,10 @@ function MarketplaceContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [materials, setMaterials] = useState(MOCK_MATERIALS);
-  const [isLoading, setIsLoading] = useState(false);
+  const [materials, setMaterials] = useState([]);
+  const [categoriesList, setCategoriesList] = useState(FALLBACK_CATEGORIES);
+  const [locationsList, setLocationsList] = useState(FALLBACK_LOCATIONS);
+  const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
@@ -64,6 +50,60 @@ function MarketplaceContent() {
     grades: searchParams.getAll("grade") || [],
     sort: searchParams.get("sort") || "newest",
   });
+
+  useEffect(() => {
+    let active = true;
+    const loadMarketplaceData = async () => {
+      setIsLoading(true);
+      try {
+        const [materialsRes, categoriesRes] = await Promise.all([
+          api.getMaterials({ limit: 100 }),
+          api.getCategories().catch(() => [])
+        ]);
+
+        if (active) {
+          const dbMaterials = materialsRes?.data || [];
+          const mappedMaterials = dbMaterials.map(m => ({
+            ...m,
+            quality_grade: m.qualityGrade || "Grade A",
+            isVerified: m.distributor?.isVerified || false,
+            distributorName: m.distributor?.companyName || "Distributor",
+            imageUrl: m.documents?.[0]?.fileUrl || null,
+            unit: m.unit?.toLowerCase() || "kg",
+            status: m.status?.toLowerCase() || "active"
+          }));
+          setMaterials(mappedMaterials);
+
+          // Extract unique categories (child categories if possible, or all)
+          if (categoriesRes && categoriesRes.length) {
+            const subCats = categoriesRes.filter(c => c.parentId !== null).map(c => c.name);
+            if (subCats.length) {
+              setCategoriesList(subCats);
+            } else {
+              setCategoriesList(categoriesRes.map(c => c.name));
+            }
+          }
+
+          // Extract unique locations from materials
+          const locs = Array.from(new Set(mappedMaterials.map(m => m.location))).filter(Boolean);
+          if (locs.length) {
+            setLocationsList(locs);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch marketplace data:", err);
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadMarketplaceData();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Sync filters to URL
   const applyFilters = (newFilters) => {
@@ -154,7 +194,7 @@ function MarketplaceContent() {
               <SlidersHorizontal className="w-4 h-4" /> Kategori Material
             </h3>
             <div className="space-y-2">
-              {CATEGORIES.map((cat) => (
+              {categoriesList.map((cat) => (
                 <label key={cat} className="flex items-center gap-2.5 cursor-pointer group">
                   <input
                     type="checkbox"
@@ -178,7 +218,7 @@ function MarketplaceContent() {
               className="input-base"
             >
               <option value="">Semua Kota</option>
-              {LOCATIONS.map((loc) => (
+              {locationsList.map((loc) => (
                 <option key={loc} value={loc}>{loc}</option>
               ))}
             </select>

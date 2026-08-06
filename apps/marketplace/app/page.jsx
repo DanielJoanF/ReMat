@@ -8,15 +8,16 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react";
+import Footer from "@/components/layout/Footer";
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
 const MOCK_CATEGORIES = [
-  { id: "1", name: "Plastik HDPE", slug: "plastik-hdpe", count: "42 ton", gradient: "from-blue-600 to-blue-800", emoji: "♻️" },
-  { id: "2", name: "Logam Besi", slug: "logam-besi", count: "128 ton", gradient: "from-gray-600 to-gray-800", emoji: "🔩" },
-  { id: "3", name: "Kertas Daur Ulang", slug: "kertas", count: "65 ton", gradient: "from-amber-600 to-amber-800", emoji: "📄" },
-  { id: "4", name: "Kaca Industri", slug: "kaca", count: "30 ton", gradient: "from-teal-600 to-teal-800", emoji: "🔮" },
-  { id: "5", name: "Tekstil Bekas", slug: "tekstil", count: "18 ton", gradient: "from-pink-600 to-pink-800", emoji: "🧵" },
-  { id: "6", name: "Elektronik (e-Waste)", slug: "ewaste", count: "9 ton", gradient: "from-purple-600 to-purple-800", emoji: "💻" },
+  { id: "1", name: "Plastik", slug: "plastik", imageUrl: "/plastic.jpeg"},
+  { id: "2", name: "Kertas & Kardus", slug: "kertas-kardus", imageUrl: "/paper.jpg"},
+  { id: "3", name: "Logam", slug: "logam", imageUrl: "/metal.jpeg"},
+  { id: "4", name: "Kaca", slug: "kaca", imageUrl: "/glass.jpeg"},
+  { id: "5", name: "Elektronik", slug: "elektronik", imageUrl: "/electronic.jpg"},
+  { id: "6", name: "Tekstil", slug: "tekstil", imageUrl: "/tekstil.jpeg"},
 ];
 
 
@@ -29,52 +30,66 @@ const FEATURES = [
 
 export default function HomePage() {
   return (
-    <div className="bg-white">
+    <div className="bg-white h-[calc(100vh-64px)] overflow-y-auto snap-y snap-mandatory scroll-smooth">
+      <style>{`
+        main + footer {
+          display: none !important;
+        }
+      `}</style>
       {/* ── Hero Section ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-white via-remat-green-light to-remat-blue">
+      <section className="relative overflow-hidden bg-gradient-to-br from-neutral-950 via-neutral-900 to-emerald-950/20 h-[calc(100vh-64px)] snap-start flex items-center">
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-remat-green/5 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 -left-24 w-64 h-64 bg-remat-blue rounded-full blur-3xl opacity-60" />
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover opacity-20"
+          >
+            <source src="/bg-page.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 -left-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl opacity-40" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             {/* Left: Text */}
             <div className="animate-slide-up">
-              <div className="inline-flex items-center gap-2 bg-remat-green/10 text-remat-green text-sm font-semibold px-3 py-1.5 rounded-full mb-6">
+              <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm font-semibold px-3 py-1.5 rounded-full mb-6">
                 <Sparkles className="w-4 h-4" />
                 Platform Ekonomi Sirkular #1 Indonesia
               </div>
-              <h1 className="text-4xl md:text-5xl xl:text-6xl font-bold text-gray-900 leading-tight mb-5 text-balance">
+              <h1 className="text-4xl md:text-5xl xl:text-6xl font-bold text-white leading-tight mb-5 text-balance">
                 Platform Kolaboratif{" "}
-                <span className="text-remat-green">Distributor-Konsumen</span>{" "}
+                <span className="text-emerald-400">Distributor-Konsumen</span>{" "}
                 untuk Industri Bebas Limbah
               </h1>
-              <p className="text-lg text-gray-500 mb-8 leading-relaxed max-w-xl">
+              <p className="text-lg text-neutral-300 mb-8 leading-relaxed max-w-xl">
                 Temukan material industri berkualitas, dukung ekonomi sirkular, dan kurangi jejak karbon bersama ratusan distributor terverifikasi di seluruh Indonesia.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/marketplace" id="hero-cta-jual" className="btn-primary text-base px-6 py-3 gap-2">
                   Mulai Cari <ArrowRight className="w-4 h-4" />
                 </Link>
-                <Link href="/search" id="hero-cta-cari" className="btn-outline text-base px-6 py-3 gap-2">
+                <Link href="/search" id="hero-cta-cari" className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-white/20 hover:border-white hover:bg-white/10 text-white font-semibold text-base rounded-lg transition-all duration-200">
                   <Sparkles className="w-4 h-4" /> Coba AI Search
                 </Link>
               </div>
 
               {/* Trust signals */}
-              <div className="flex items-center gap-6 mt-8 text-sm text-gray-400">
-                <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-remat-green" /> Terverifikasi</span>
-                <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-remat-green" /> Pengiriman Nasional</span>
-                <span className="flex items-center gap-1.5"><Leaf className="w-4 h-4 text-remat-green" /> Ramah Lingkungan</span>
+              <div className="flex items-center gap-6 mt-8 text-sm text-neutral-400">
+                <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Terverifikasi</span>
+                <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-emerald-400" /> Pengiriman Nasional</span>
+                <span className="flex items-center gap-1.5"><Leaf className="w-4 h-4 text-emerald-400" /> Ramah Lingkungan</span>
               </div>
             </div>
 
             {/* Right: Visual */}
-            <div className="relative hidden md:flex items-center justify-center">
+            {/* <div className="relative hidden md:flex items-center justify-center">
               <div className="relative w-full max-w-md">
-                {/* Main card */}
+                
                 <div className="card p-6 shadow-xl">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 bg-remat-green-light rounded-xl flex items-center justify-center text-2xl">♻️</div>
@@ -96,16 +111,8 @@ export default function HomePage() {
                     Lihat Detail <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
-
-                {/* Floating badges */}
-                <div className="absolute -top-4 -right-4 card px-3 py-2 shadow-lg text-xs font-semibold text-green-700 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> AI Match 96%
-                </div>
-                <div className="absolute -bottom-4 -left-4 card px-3 py-2 shadow-lg text-xs font-medium text-gray-700 flex items-center gap-1.5">
-                  <Leaf className="w-3.5 h-3.5 text-remat-green" /> -45kg CO₂
-                </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
@@ -113,16 +120,16 @@ export default function HomePage() {
 
 
       {/* ── Categories Section ────────────────────────────────────────────── */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="py-16 bg-gray-50 snap-start min-h-[calc(100vh-64px)] flex flex-col justify-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
           <div className="flex items-end justify-between mb-8">
             <div>
               <h2 className="section-title">Kategori Material</h2>
               <p className="section-subtitle">Jelajahi ratusan jenis material industri siap pakai.</p>
             </div>
-            <Link href="/marketplace" className="flex items-center gap-1 text-sm font-semibold text-remat-green hover:text-remat-green-dark transition-colors">
+            {/* <Link href="/marketplace" className="flex items-center gap-1 text-sm font-semibold text-remat-green hover:text-remat-green-dark transition-colors">
               Lihat Semua <ChevronRight className="w-4 h-4" />
-            </Link>
+            </Link> */}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -132,10 +139,17 @@ export default function HomePage() {
                 href={`/marketplace?categorySlug=${cat.slug}`}
                 className="group relative overflow-hidden rounded-card aspect-square flex flex-col justify-end cursor-pointer"
               >
-                {/* Background gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} transition-transform duration-300 group-hover:scale-105`} />
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
+                {/* Background image */}
+                <div className="absolute inset-0 bg-gray-200" />
+                {cat.imageUrl && (
+                  <img
+                    src={cat.imageUrl}
+                    alt={cat.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                )}
+                {/* Gradient overlay for readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent group-hover:from-black/90 group-hover:via-black/45 transition-colors" />
                 {/* Content */}
                 <div className="relative p-3">
                   <p className="text-2xl mb-1">{cat.emoji}</p>
@@ -153,8 +167,8 @@ export default function HomePage() {
       </section>
 
       {/* ── Features Section ─────────────────────────────────────────────── */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="py-16 bg-white snap-start min-h-[calc(100vh-64px)] flex flex-col justify-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
           <div className="text-center mb-12">
             <h2 className="section-title">Mengapa Memilih ReMat?</h2>
             <p className="section-subtitle">Solusi lengkap untuk rantai pasok material industri yang berkelanjutan.</p>
@@ -175,25 +189,28 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CTA Banner ────────────────────────────────────────────────────── */}
-      <section className="py-16 bg-remat-green">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Siap Bergabung dengan Ekosistem Sirkular?
-          </h2>
-          <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
-            Daftar sekarang dan mulai kontribusi nyata dalam mengurangi limbah industri Indonesia.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link href="/marketplace" className="inline-flex items-center gap-2 bg-white text-remat-green font-bold px-6 py-3 rounded-lg hover:bg-remat-blue transition-colors">
-              <Package className="w-5 h-5" /> Jelajahi Material
-            </Link>
-            <Link href="/search" className="inline-flex items-center gap-2 bg-remat-green-dark text-white font-bold px-6 py-3 rounded-lg hover:bg-remat-green-dark/80 transition-colors">
-              <Sparkles className="w-5 h-5" /> Coba AI Search
-            </Link>
+      {/* ── CTA Banner + Footer ───────────────────────────────────────────── */}
+      <div className="snap-start flex flex-col justify-between min-h-[calc(100vh-64px)] bg-remat-green">
+        <section className="py-16 flex-1 flex flex-col justify-center">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center w-full">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Siap Bergabung dengan Ekosistem Sirkular?
+            </h2>
+            <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
+              Daftar sekarang dan mulai kontribusi nyata dalam mengurangi limbah industri Indonesia.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link href="/marketplace" className="inline-flex items-center gap-2 bg-white text-remat-green font-bold px-6 py-3 rounded-lg hover:bg-remat-blue transition-colors">
+                <Package className="w-5 h-5" /> Jelajahi Material
+              </Link>
+              <Link href="/search" className="inline-flex items-center gap-2 bg-remat-green-dark text-white font-bold px-6 py-3 rounded-lg hover:bg-remat-green-dark/80 transition-colors">
+                <Sparkles className="w-5 h-5" /> Coba AI Search
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -1,20 +1,13 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Search, Sparkles, Bell, X, ChevronRight, Package, MapPin } from "lucide-react";
 import MaterialCard from "@/components/ui/MaterialCard";
 import EmptyState from "@/components/ui/EmptyState";
 import { CardGridSkeleton } from "@/components/ui/SkeletonLoader";
 import { useAuth } from "@/lib/auth-context";
-
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-const MOCK_RESULTS = [
-  { id: "1", title: "Biji Plastik PET Grade A (Clear)", quality_grade: "Grade A", quantity: 500, unit: "kg", price: 12500, location: "Surabaya", status: "active", isVerified: true, distributorName: "PT. EcoRecycle Jaya", category: { name: "Plastik PET" }, score: 96 },
-  { id: "7", title: "Biji Plastik PP Clear Regrind", quality_grade: "Grade A", quantity: 700, unit: "kg", price: 9800, location: "Tangerang", status: "active", isVerified: true, distributorName: "PT. Polipropilena Prima", category: { name: "Plastik PP" }, score: 89 },
-  { id: "4", title: "HDPE Drum Plastik Bekas", quality_grade: "Grade B", quantity: 150, unit: "pcs", price: 85000, location: "Bandung", status: "active", isVerified: true, distributorName: "PT. Plastik Nusantara", category: { name: "Plastik HDPE" }, score: 82 },
-  { id: "11", title: "Sisa makanan catering", quality_grade: "Grade A", quantity: 100, unit: "kg", price: 2500, location: "Jakarta", status: "active", isVerified: true, distributorName: "Catering Makanan Indonesia", category: { name: "Limbah Makanan" }, imageUrl: null },
-];
+import { api } from "@/lib/api";
 
 const SUGGESTED_QUERIES = [
   "Plastik PET bersih grade A Surabaya",
@@ -88,8 +81,8 @@ function SearchContent() {
   const initialQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(initialQuery);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [results, setResults] = useState(initialQuery ? MOCK_RESULTS : []);
-  const [searchType, setSearchType] = useState(initialQuery ? "semantic" : null);
+  const [results, setResults] = useState([]);
+  const [searchType, setSearchType] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -101,20 +94,36 @@ function SearchContent() {
     setSearchQuery(q);
     router.push(`/search?q=${encodeURIComponent(q)}`, { scroll: false });
 
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1000));
-
-    if (q.toLowerCase().includes("besi cor") || q.toLowerCase().includes("karet")) {
+    try {
+      const res = await api.searchMaterials({ q: q.trim() });
+      const mapped = (res.data || []).map(r => ({
+        ...r,
+        quality_grade: r.qualityGrade || "Grade A",
+        isVerified: r.distributor?.isVerified || false,
+        distributorName: r.distributor?.companyName || "Distributor",
+        imageUrl: r.documents?.[0]?.fileUrl || null,
+        unit: r.unit?.toLowerCase() || "kg",
+        status: r.status?.toLowerCase() || "active",
+        score: r.similarity ? Math.round(r.similarity * 100) : null
+      }));
+      setResults(mapped);
+      setSearchType(res.searchType);
+      setShowAlert(res.showAlert || false);
+    } catch (err) {
+      console.error("AI search failed:", err);
       setResults([]);
-      setSearchType("semantic");
+      setSearchType("keyword");
       setShowAlert(true);
-    } else {
-      setResults(MOCK_RESULTS.filter((r) => r.title.toLowerCase().includes(q.split(" ")[0]?.toLowerCase() || "") || true));
-      setSearchType("semantic");
-      setShowAlert(false);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
+
+  useEffect(() => {
+    if (initialQuery) {
+      handleSearch(initialQuery);
+    }
+  }, [initialQuery]);
 
   return (
     <div className="min-h-screen bg-gray-50">
