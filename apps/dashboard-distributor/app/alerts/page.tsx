@@ -204,7 +204,12 @@ export default function AlertsPage() {
       const result = await getData<AlertsResponse>('/alerts/my');
       setAlerts(result.data ?? []);
     } catch (error: unknown) {
-      handleApiError(error, toastRef.current, 'Gagal memuat data alert');
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.includes('403') || msg.includes('permission') || msg.includes('Consumer profile')) {
+        setAlerts([]);
+      } else {
+        handleApiError(error, toastRef.current, 'Gagal memuat data alert');
+      }
     } finally {
       setLoading(false);
     }
