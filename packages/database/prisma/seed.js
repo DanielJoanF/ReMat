@@ -77,7 +77,7 @@ async function main() {
             city: d.city,
             latitude: d.lat,
             longitude: d.lng,
-            businessLicenseUrl: `https://storage.remat.id/licenses/siup-${i + 1}.pdf`,
+            businessLicenseUrl: `https://gfvfwuybqscjdngtllrw.supabase.co/storage/v1/object/public/materials/licenses/siup-${i + 1}.pdf`,
             isVerified: true,
           },
         },
@@ -292,7 +292,9 @@ async function main() {
       data: {
         materialId: mat.id,
         type: docType,
-        fileUrl: `https://storage.remat.id/documents/doc-${mat.materialCode}-${i + 1}.pdf`,
+        fileUrl: docType === "PHOTO" 
+          ? "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80"
+          : `https://gfvfwuybqscjdngtllrw.supabase.co/storage/v1/object/public/materials/documents/doc-${mat.materialCode}-${i + 1}.pdf`,
       }
     });
   }
