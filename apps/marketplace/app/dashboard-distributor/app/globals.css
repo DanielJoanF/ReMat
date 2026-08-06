@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --background: #FFFFFF; /* Background White */
+  --foreground: #1A1A1A; /* Text Primary Dark */
+  --primary: #046B3C; /* Primary Green */
+  --primary-container: #107C41; /* keep*/
+  --secondary: #EBF3FF; /* Secondary Light Blue */
+  --secondary-container: #B9D7FD; /* keep */
+  --surface: #F8F9FF; /* surface from design */
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: #EFF4FF;
+  --surface-container: #E5EEFF;
+  --on-surface: #0B1C30; /* keep for other text */
+  --on-surface-variant: #3F4940;
+  --outline: #6F7A6F;
+  --outline-variant: #BECABD;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--background);
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Design token utilities */
+@layer utilities {
+  .bg-surface { background-color: var(--surface); }
+  .bg-surface-container-lowest { background-color: var(--surface-container-lowest); }
+  .bg-surface-container-low { background-color: var(--surface-container-low); }
+  .bg-surface-container { background-color: var(--surface-container); }
+  .bg-surface-container-high { background-color: #DCE9FF; }
+  .bg-surface-container-highest { background-color: #D3E4FE; }
+  .text-on-surface { color: var(--on-surface); }
+  .text-on-surface-variant { color: var(--on-surface-variant); }
+  .border-outline { border-color: var(--outline); }
+  .border-outline-variant { border-color: var(--outline-variant); }
+
+  .card-shimmer {
+    background: linear-gradient(
+      90deg,
+      #EFF4FF 25%,
+      #E5EEFF 50%,
+      #EFF4FF 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes slideIn {
+  0% { transform: translateX(100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
