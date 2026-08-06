@@ -2,6 +2,28 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@/components/layout/dashboard-layout": ["./app/dashboard-distributor/components/layout/dashboard-layout"],
+      "@/components/layout/header": ["./app/dashboard-distributor/components/layout/header"],
+      "@/components/layout/sidebar": ["./app/dashboard-distributor/components/layout/sidebar"],
+      "@/components/ui/avatar": ["./app/dashboard-distributor/components/ui/avatar"],
+      "@/components/ui/badge": ["./app/dashboard-distributor/components/ui/badge"],
+      "@/components/ui/button": ["./app/dashboard-distributor/components/ui/button"],
+      "@/components/ui/card": ["./app/dashboard-distributor/components/ui/card"],
+      "@/components/ui/empty-state": ["./app/dashboard-distributor/components/ui/empty-state"],
+      "@/components/ui/input": ["./app/dashboard-distributor/components/ui/input"],
+      "@/components/ui/modal": ["./app/dashboard-distributor/components/ui/modal"],
+      "@/components/ui/pagination": ["./app/dashboard-distributor/components/ui/pagination"],
+      "@/components/ui/select": ["./app/dashboard-distributor/components/ui/select"],
+      "@/components/ui/skeleton": ["./app/dashboard-distributor/components/ui/skeleton"],
+      "@/components/ui/status-badge": ["./app/dashboard-distributor/components/ui/status-badge"],
+      "@/components/ui/table": ["./app/dashboard-distributor/components/ui/table"],
+      "@/components/ui/tabs": ["./app/dashboard-distributor/components/ui/tabs"],
+      "@/components/ui/textarea": ["./app/dashboard-distributor/components/ui/textarea"],
+      "@/components/ui/toast": ["./app/dashboard-distributor/components/ui/toast"],
+      "@/components/providers": ["./app/dashboard-distributor/components/providers"],
+      "@/contexts/*": ["./app/dashboard-distributor/contexts/*"],
+      "@/lib/api-client": ["./app/dashboard-distributor/lib/api-client"],
+      "@/lib/utils": ["./app/dashboard-distributor/lib/utils"],
       "@/*": ["./*"]
     },
     "lib": [
@@ -33,6 +55,8 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "app/dashboard-distributor/.next",
+    "app/dashboard-distributor/node_modules"
   ]
 }
