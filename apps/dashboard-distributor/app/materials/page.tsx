@@ -248,7 +248,7 @@ function MaterialsPageInner() {
           </Link>
         </div>
 
-        {/* ── Top 4 KPI Cards (Bento Grid) ────────────────────── */}
+                {/* ── Top 4 KPI Cards (Bento Grid) ────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Total Produk */}
           <div className="bg-white rounded-lg shadow-card p-4 border border-gray-100 flex flex-col justify-between hover:shadow-card-hover transition-shadow">
