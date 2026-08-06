@@ -17,6 +17,7 @@ import { Modal } from '@/components/ui/modal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard, SkeletonText } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/contexts/auth-context';
 import { getData, patchData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 
@@ -185,6 +186,7 @@ function AlertsSkeleton() {
 
 export default function AlertsPage() {
   const { toast } = useToast();
+  const { isReady } = useAuth();
   const toastRef = useRef(toast);
   useEffect(() => { toastRef.current = toast; }, [toast]);
 
@@ -209,8 +211,11 @@ export default function AlertsPage() {
   }, []); // toast stabilized via ref
 
   useEffect(() => {
+    // Wait until AuthProvider has written the user identity to localStorage,
+    // so the API request carries the correct x-user-id / x-user-role headers.
+    if (!isReady) return;
     fetchAlerts();
-  }, [fetchAlerts]);
+  }, [isReady, fetchAlerts]);
 
   const openDeactivateModal = (id: string) => {
     setDeactivateId(id);

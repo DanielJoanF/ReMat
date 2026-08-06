@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { SkeletonText } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/contexts/auth-context';
 import { getData, patchData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 
@@ -93,6 +94,7 @@ function StatusTimeline({ current }: { current: OrderStatus }) {
 export default function OrderDetailPage() {
   const params = useParams();
   const { toast } = useToast();
+  const { isReady } = useAuth();
   const orderId = params?.id as string;
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,7 +116,12 @@ export default function OrderDetailPage() {
     } finally { setLoading(false); }
   }, [orderId, toast]);
 
-  useEffect(() => { fetchOrder(); }, [fetchOrder]);
+  useEffect(() => {
+    // Wait until AuthProvider has written the user identity to localStorage,
+    // so the API request carries the correct x-user-id / x-user-role headers.
+    if (!isReady) return;
+    fetchOrder();
+  }, [isReady, fetchOrder]);
 
   const handleConfirm = async () => {
     if (!order) return; setActionLoading(true);

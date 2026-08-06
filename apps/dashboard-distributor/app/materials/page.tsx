@@ -27,6 +27,7 @@ import {
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/contexts/auth-context';
 import { getData, patchData, deleteData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/utils';
 
@@ -36,16 +37,16 @@ type MaterialStatus = 'DRAFT' | 'PENDING_REVIEW' | 'ACTIVE' | 'REJECTED' | 'SUSP
 
 interface Material {
   id: string;
-  name: string;
+  title: string;
   description: string;
-  grade: string;
+  qualityGrade: string | null;
   price: number;
   unit: string;
-  stock: number;
+  quantity: number;
   location: string;
   status: MaterialStatus;
-  categoryName?: string;
-  imageUrl?: string;
+  category?: { id: string; name: string; slug?: string } | null;
+  documents?: { id: string; type: string; fileUrl: string }[];
 }
 
 interface MaterialsResponse {
@@ -122,6 +123,7 @@ function MaterialsPageInner() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
   const { toast } = useToast();
+  const { isReady } = useAuth();
   const toastRef = useRef(toast);
   useEffect(() => { toastRef.current = toast; }, [toast]);
 
@@ -148,19 +150,28 @@ function MaterialsPageInner() {
       const params: Record<string, string | number> = { page, limit: PAGE_SIZE };
       if (searchQuery) params.search = searchQuery;
       const result = await getData<MaterialsResponse>('/materials/my', params);
-      setMaterials(result.data ?? EMPTY_MATERIALS);
-      setTotalItems(result.pagination?.total ?? 0);
-      setTotalPages(result.pagination?.totalPages ?? 1);
-    } catch {
-      setMaterials(EMPTY_MATERIALS);
-      setTotalItems(0);
-      setTotalPages(1);
+            setMaterials(result.data ?? EMPTY_MATERIALS);
+            setTotalItems(result.pagination?.total ?? 0);
+            setTotalPages(result.pagination?.totalPages ?? 1);
+          } catch (error: unknown) {
+            setMaterials(EMPTY_MATERIALS);
+            setTotalItems(0);
+            setTotalPages(1);
+            toastRef.current({
+              type: 'error',
+              message: error instanceof Error ? error.message : 'Gagal memuat data material',
+            });
     } finally {
       setLoading(false);
     }
   }, [page, searchQuery, refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { fetchMaterials(); }, [fetchMaterials]);
+  useEffect(() => {
+    // Wait until AuthProvider has written the user identity to localStorage,
+    // so the API request carries the correct x-user-id / x-user-role headers.
+    if (!isReady) return;
+    fetchMaterials();
+  }, [isReady, fetchMaterials]);
 
   // Sync local searchQuery with URL search param (header search)
   useEffect(() => {
@@ -197,14 +208,15 @@ function MaterialsPageInner() {
 
   // Filtered materials
   const filteredMaterials = materials.filter((item) => {
-    if (selectedCategory !== 'Semua Kategori' && item.categoryName !== selectedCategory) {
+    const categoryName = item.category?.name ?? '';
+    if (selectedCategory !== 'Semua Kategori' && categoryName !== selectedCategory) {
       return false;
     }
     if (selectedStatusFilter === 'Aktif' && item.status !== 'ACTIVE') return false;
     if (selectedStatusFilter === 'Menunggu' && item.status !== 'PENDING_REVIEW') return false;
-    if (selectedStatusFilter === 'Habis' && item.stock !== 0 && item.status !== 'SUSPENDED') return false;
+    if (selectedStatusFilter === 'Habis' && item.quantity !== 0 && item.status !== 'SUSPENDED') return false;
     if (selectedStatusFilter === 'Draft' && item.status !== 'DRAFT') return false;
-    if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
@@ -212,9 +224,9 @@ function MaterialsPageInner() {
   const totalProducts = totalItems;
   const activeStockTon = materials
     .filter((m) => m.status === 'ACTIVE')
-    .reduce((sum, m) => sum + m.stock, 0) / 1000;
+    .reduce((sum, m) => sum + m.quantity, 0) / 1000;
   const pendingCount = materials.filter((m) => m.status === 'PENDING_REVIEW').length;
-  const soldCount = materials.filter((m) => m.stock === 0 && m.status === 'ACTIVE').length;
+  const soldCount = materials.filter((m) => m.quantity === 0 && m.status === 'ACTIVE').length;
 
   return (
     <DashboardLayout>
@@ -368,14 +380,15 @@ function MaterialsPageInner() {
                   </tr>
                 ) : (
                   filteredMaterials.map((item) => {
-                    const stockInTon = (item.stock / 1000).toFixed(1);
+                    const stockInTon = ((item.quantity ?? 0) / 1000).toFixed(1);
+                    const photoUrl = item.documents?.find((d) => d.type === 'PHOTO')?.fileUrl;
                     return (
                       <tr key={item.id} className="hover:bg-gray-50/70 transition-colors">
                         {/* Foto */}
                         <td className="py-3 px-4">
                           <div className="w-9 h-9 rounded-md bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            {item.imageUrl ? (
-                              <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                            {photoUrl ? (
+                              <img src={photoUrl} alt={item.title} className="w-full h-full object-cover" />
                             ) : (
                               <Package className="w-4 h-4 text-gray-400" />
                             )}
@@ -384,13 +397,13 @@ function MaterialsPageInner() {
 
                         {/* Nama Material */}
                         <td className="py-3 px-4 font-semibold text-[#0B1C30]">
-                          {item.name}
+                          {item.title}
                         </td>
 
                         {/* Kategori */}
                         <td className="py-3 px-4">
                           <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-semibold bg-[#E8F1FF] text-[#3B82F6]">
-                            {item.categoryName || 'Plastik'}
+                            {item.category?.name ?? '—'}
                           </span>
                         </td>
 
@@ -406,7 +419,7 @@ function MaterialsPageInner() {
 
                         {/* Status */}
                         <td className="py-3 px-4 text-center">
-                          <StatusPill status={item.status} stock={item.stock} />
+                          <StatusPill status={item.status} stock={item.quantity} />
                         </td>
 
                         {/* Aksi */}
@@ -497,7 +510,7 @@ function MaterialsPageInner() {
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
               Apakah Anda yakin ingin menghapus{' '}
-              <strong>{deleteModal.material?.name}</strong>? Tindakan ini tidak dapat dibatalkan.
+              <strong>{deleteModal.material?.title}</strong>? Tindakan ini tidak dapat dibatalkan.
             </p>
             <div className="flex items-center justify-end gap-3">
               <button

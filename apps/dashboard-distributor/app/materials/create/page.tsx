@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/contexts/auth-context';
 import { getData, postData } from '@/lib/api-client';
 
 const materialSchema = z.object({
@@ -47,6 +48,7 @@ const unitOptions = [
 export default function CreateMaterialPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { isReady } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -55,6 +57,8 @@ export default function CreateMaterialPage() {
   });
 
   useEffect(() => {
+    // Wait until AuthProvider has written the user identity to localStorage.
+    if (!isReady) return;
     const fetchCategories = async () => {
       try {
         const response = await getData<{ data: Category[] }>('/categories');
@@ -64,7 +68,7 @@ export default function CreateMaterialPage() {
       }
     };
     fetchCategories();
-  }, []);
+  }, [isReady]);
 
   const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name || c.label || '' }));
 

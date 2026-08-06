@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/contexts/auth-context';
 import { getData, putData } from '@/lib/api-client';
 
 const materialSchema = z.object({
@@ -31,7 +32,18 @@ const materialSchema = z.object({
 type MaterialFormData = z.infer<typeof materialSchema>;
 
 interface Category { id: string; name: string; }
-interface Material { id: string; name: string; description: string; categoryId: string; grade: string; price: number; unit: string; stock: number; location: string; status: string; }
+interface Material {
+  id: string;
+  title: string;
+  description: string;
+  categoryId: string;
+  qualityGrade: string | null;
+  price: number;
+  unit: string;
+  quantity: number;
+  location: string;
+  status: string;
+}
 
 const gradeOptions = [
   { value: 'A', label: 'Grade A (Premium)' },
@@ -50,6 +62,7 @@ export default function EditMaterialPage() {
   const id = params?.id as string;
   const router = useRouter();
   const { toast } = useToast();
+  const { isReady } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -60,6 +73,9 @@ export default function EditMaterialPage() {
   });
 
   useEffect(() => {
+    // Wait until AuthProvider has written the user identity to localStorage,
+    // so the API request carries the correct x-user-id / x-user-role headers.
+    if (!isReady) return;
     const fetchData = async () => {
       try {
         const [matRes, catRes] = await Promise.all([
@@ -70,8 +86,8 @@ export default function EditMaterialPage() {
         setMaterial(mat);
         setCategories(catRes.data || []);
         reset({
-          nama: mat.name, deskripsi: mat.description, kategori: mat.categoryId,
-          grade: mat.grade, harga: mat.price, unit: mat.unit, stok: mat.stock, lokasi: mat.location,
+          nama: mat.title, deskripsi: mat.description, kategori: mat.categoryId,
+          grade: mat.qualityGrade ?? '', harga: mat.price, unit: mat.unit, stok: mat.quantity, lokasi: mat.location,
         });
       } catch {
         toast({ type: 'error', message: 'Gagal memuat data material' });
@@ -80,7 +96,7 @@ export default function EditMaterialPage() {
       }
     };
     fetchData();
-  }, [id, reset, toast]);
+      }, [id, reset, toast, isReady]);
 
   const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name }));
   const isEditable = material?.status === 'DRAFT' || material?.status === 'REJECTED';
@@ -89,9 +105,9 @@ export default function EditMaterialPage() {
     try {
       setSubmitting(true);
       await putData(`/materials/${id}`, {
-        name: data.nama, description: data.deskripsi, categoryId: data.kategori,
-        grade: data.grade, price: data.harga, unit: data.unit, stock: data.stok, location: data.lokasi,
-      });
+              title: data.nama, description: data.deskripsi, categoryId: data.kategori,
+              qualityGrade: data.grade, price: data.harga, unit: data.unit, quantity: data.stok, location: data.lokasi,
+            });
       toast({ type: 'success', message: 'Material berhasil diperbarui' });
       router.push('/materials');
     } catch (err) {

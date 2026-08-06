@@ -64,11 +64,11 @@ function BrandHeader({ collapsed }: { collapsed: boolean }) {
 
 // ── Profile card (Profile Toko) ────────────────────────────────────────
 export function ProfileCard({ collapsed }: { collapsed: boolean }) {
-  const { user, isLoading } = useAuth();
+  const { user, isReady } = useAuth();
 
   // Guard: only render user-dependent content after auth resolves (client-side),
   // so SSR and hydration produce identical markup.
-  if (isLoading) return null;
+  if (!isReady) return null;
 
   const name = user?.name || 'ReMat Distributor';
   const role = 'Industrial Waste Hub';
