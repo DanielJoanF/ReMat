@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -12,59 +12,13 @@ import {
   CreditCard,
   XCircle,
   Star,
+  Loader2,
+  AlertCircle,
+  ShoppingBag,
 } from "lucide-react";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { CardSkeleton } from "@/components/ui/SkeletonLoader";
-
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-const MOCK_ORDERS = [
-  {
-    id: "txn-001",
-    status: "shipped",
-    totalAmount: 6250000,
-    createdAt: "2026-07-28T09:30:00Z",
-    shippingAddress: "Jl. Industri No. 15, Bekasi Barat",
-    distributor: { companyName: "PT. EcoRecycle Jaya", city: "Surabaya" },
-    items: [
-      { id: "ti1", title: "Biji Plastik PET Grade A", quantity: 500, unit: "kg", unitPrice: 12500 },
-    ],
-  },
-  {
-    id: "txn-002",
-    status: "paid",
-    totalAmount: 840000,
-    createdAt: "2026-08-01T14:00:00Z",
-    shippingAddress: "Kawasan Industri Pulogadung, Jakarta Timur",
-    distributor: { companyName: "UD. Kertas Maju", city: "Jakarta" },
-    items: [
-      { id: "ti2", title: "Kertas Kardus Bekas (OCC)", quantity: 400, unit: "kg", unitPrice: 1800 },
-      { id: "ti3", title: "Kertas Koran Bekas", quantity: 100, unit: "kg", unitPrice: 1200 },
-    ],
-  },
-  {
-    id: "txn-003",
-    status: "completed",
-    totalAmount: 8400000,
-    createdAt: "2026-07-15T10:00:00Z",
-    shippingAddress: "Jl. Raya Bekasi Km.21, Cakung",
-    distributor: { companyName: "CV. Logam Bersih", city: "Bekasi" },
-    items: [
-      { id: "ti4", title: "Scrap Besi H2 Campuran", quantity: 2000, unit: "kg", unitPrice: 4200 },
-    ],
-    rating: 5,
-  },
-  {
-    id: "txn-004",
-    status: "pending",
-    totalAmount: 12750000,
-    createdAt: "2026-08-05T08:00:00Z",
-    shippingAddress: "Jl. Pahlawan No. 8, Bandung",
-    distributor: { companyName: "PT. Plastik Nusantara", city: "Bandung" },
-    items: [
-      { id: "ti5", title: "HDPE Drum Plastik Bekas", quantity: 150, unit: "pcs", unitPrice: 85000 },
-    ],
-  },
-];
+import { api } from "@/lib/api";
 
 // Stepper steps
 const STEPS = [
@@ -81,6 +35,29 @@ function formatIDR(amount) {
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
+}
+
+/** Normalize DB transaction to UI shape */
+function normalizeOrder(tx) {
+  return {
+    id: tx.id,
+    status: tx.status?.toLowerCase() || "pending",
+    totalAmount: tx.totalAmount,
+    createdAt: tx.createdAt,
+    shippingAddress: tx.shippingAddress || "",
+    distributor: {
+      companyName: tx.distributor?.companyName || "Distributor",
+      city: tx.distributor?.city || "",
+    },
+    items: (tx.items || []).map((item) => ({
+      id: item.id,
+      title: item.material?.title || item.title || "Material",
+      quantity: item.quantity,
+      unit: item.material?.unit?.toLowerCase() || item.unit || "kg",
+      unitPrice: item.unitPrice,
+    })),
+    rating: tx.rating?.score ?? null,
+  };
 }
 
 function OrderStepper({ currentStatus }) {
@@ -138,7 +115,33 @@ function OrdersContent() {
   const searchParams = useSearchParams();
   const checkoutSuccess = searchParams.get("checkout") === "success";
 
-  const [orders] = useState(MOCK_ORDERS);
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    const fetchOrders = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await api.getMyTransactions();
+        if (active) {
+          const raw = Array.isArray(response) ? response : (response?.data ?? []);
+          setOrders(raw.map(normalizeOrder));
+        }
+      } catch (err) {
+        if (active) {
+          setError(err.message || "Gagal memuat pesanan. Coba refresh halaman.");
+        }
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    fetchOrders();
+    return () => { active = false; };
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
@@ -157,80 +160,117 @@ function OrdersContent() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Pesanan Saya</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{orders.length} pesanan ditemukan</p>
+          {!isLoading && !error && (
+            <p className="text-sm text-gray-500 mt-0.5">{orders.length} pesanan ditemukan</p>
+          )}
         </div>
       </div>
 
-      {/* Orders list */}
-      <div className="space-y-4">
-        {orders.map((order) => (
-          <div key={order.id} className="card p-5">
-            {/* Order header */}
-            <div className="flex items-start justify-between gap-3 mb-4 pb-4 border-b border-gray-100">
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">ID Pesanan</p>
-                <p className="font-mono text-sm font-semibold text-gray-800">#{order.id}</p>
-                <p className="text-xs text-gray-400 mt-1">{formatDate(order.createdAt)}</p>
-              </div>
-              <div className="text-right">
-                <StatusBadge status={order.status} />
-                <p className="font-bold text-remat-green mt-2">{formatIDR(order.totalAmount)}</p>
-              </div>
-            </div>
+      {/* Loading */}
+      {isLoading && (
+        <div className="space-y-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      )}
 
-            {/* Items preview */}
-            <div className="space-y-1.5 mb-4">
-              {order.items.slice(0, 2).map((item) => (
-                <div key={item.id} className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-8 h-8 bg-remat-blue rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Package className="w-4 h-4 text-remat-green/60" />
-                  </div>
-                  <span className="flex-1 truncate">{item.title}</span>
-                  <span className="text-gray-400 flex-shrink-0">{item.quantity} {item.unit}</span>
-                </div>
-              ))}
-              {order.items.length > 2 && (
-                <p className="text-xs text-gray-400 ml-10">+{order.items.length - 2} item lainnya</p>
-              )}
-            </div>
-
-            {/* Distributor */}
-            <p className="text-xs text-gray-500 mb-4">
-              Dari: <span className="font-medium text-gray-700">{order.distributor.companyName}</span> · {order.distributor.city}
-            </p>
-
-            {/* Stepper */}
-            <div className="mb-4">
-              <OrderStepper currentStatus={order.status} />
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Link
-                href={`/consumer/orders/${order.id}`}
-                id={`order-detail-${order.id}`}
-                className="btn-outline text-sm gap-2 flex-1 sm:flex-initial"
-              >
-                Lihat Detail <ChevronRight className="w-4 h-4" />
-              </Link>
-              {order.status === "completed" && !order.rating && (
-                <Link
-                  href={`/consumer/orders/${order.id}/rate`}
-                  id={`order-rate-${order.id}`}
-                  className="btn-primary text-sm gap-2"
-                >
-                  <Star className="w-4 h-4" /> Beri Rating
-                </Link>
-              )}
-              {order.status === "completed" && order.rating && (
-                <span className="flex items-center gap-1 text-sm text-amber-500 font-medium">
-                  {Array.from({ length: order.rating }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
-                </span>
-              )}
-            </div>
+      {/* Error */}
+      {!isLoading && error && (
+        <div className="flex items-center gap-3 p-5 bg-red-50 border border-red-200 rounded-xl text-red-700">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">Gagal Memuat Pesanan</p>
+            <p className="text-xs mt-0.5">{error}</p>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && !error && orders.length === 0 && (
+        <div className="text-center py-16">
+          <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-gray-700 mb-1">Belum Ada Pesanan</h2>
+          <p className="text-sm text-gray-400 mb-5">Mulai beli material daur ulang dari marketplace kami.</p>
+          <Link href="/marketplace" className="btn-primary">
+            Jelajahi Marketplace
+          </Link>
+        </div>
+      )}
+
+      {/* Orders list */}
+      {!isLoading && !error && orders.length > 0 && (
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <div key={order.id} className="card p-5">
+              {/* Order header */}
+              <div className="flex items-start justify-between gap-3 mb-4 pb-4 border-b border-gray-100">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">ID Pesanan</p>
+                  <p className="font-mono text-sm font-semibold text-gray-800">#{order.id.slice(0, 8)}</p>
+                  <p className="text-xs text-gray-400 mt-1">{formatDate(order.createdAt)}</p>
+                </div>
+                <div className="text-right">
+                  <StatusBadge status={order.status} />
+                  <p className="font-bold text-remat-green mt-2">{formatIDR(order.totalAmount)}</p>
+                </div>
+              </div>
+
+              {/* Items preview */}
+              <div className="space-y-1.5 mb-4">
+                {order.items.slice(0, 2).map((item) => (
+                  <div key={item.id} className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="w-8 h-8 bg-remat-blue rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Package className="w-4 h-4 text-remat-green/60" />
+                    </div>
+                    <span className="flex-1 truncate">{item.title}</span>
+                    <span className="text-gray-400 flex-shrink-0">{item.quantity} {item.unit}</span>
+                  </div>
+                ))}
+                {order.items.length > 2 && (
+                  <p className="text-xs text-gray-400 ml-10">+{order.items.length - 2} item lainnya</p>
+                )}
+              </div>
+
+              {/* Distributor */}
+              <p className="text-xs text-gray-500 mb-4">
+                Dari: <span className="font-medium text-gray-700">{order.distributor.companyName}</span>
+                {order.distributor.city && ` · ${order.distributor.city}`}
+              </p>
+
+              {/* Stepper */}
+              <div className="mb-4">
+                <OrderStepper currentStatus={order.status} />
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link
+                  href={`/consumer/orders/${order.id}`}
+                  id={`order-detail-${order.id}`}
+                  className="btn-outline text-sm gap-2 flex-1 sm:flex-initial"
+                >
+                  Lihat Detail <ChevronRight className="w-4 h-4" />
+                </Link>
+                {order.status === "completed" && !order.rating && (
+                  <Link
+                    href={`/consumer/orders/${order.id}/rate`}
+                    id={`order-rate-${order.id}`}
+                    className="btn-primary text-sm gap-2"
+                  >
+                    <Star className="w-4 h-4" /> Beri Rating
+                  </Link>
+                )}
+                {order.status === "completed" && order.rating && (
+                  <span className="flex items-center gap-1 text-sm text-amber-500 font-medium">
+                    {Array.from({ length: order.rating }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

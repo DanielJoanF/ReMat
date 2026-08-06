@@ -1,7 +1,6 @@
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 
 export const metadata = {
   title: "ReMat Marketplace — Platform Limbah Industri Sirkular",
@@ -30,7 +29,6 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <Navbar />
           <main className="min-h-[calc(100vh-64px)]">{children}</main>
-          <Footer />
         </AuthProvider>
       </body>
     </html>

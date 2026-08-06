@@ -7,6 +7,7 @@ import {
   Sparkles,
   ShieldCheck,
   Truck,
+  BadgeCheck,
 } from "lucide-react";
 import Footer from "@/components/layout/Footer";
 
@@ -25,7 +26,7 @@ const MOCK_CATEGORIES = [
 const FEATURES = [
   { icon: Sparkles, title: "AI Smart Search", desc: "Temukan material ideal dengan pencarian semantik bertenaga AI." },
   { icon: ShieldCheck, title: "Distributor Terverifikasi", desc: "Setiap distributor telah melewati proses verifikasi ketat." },
-  { icon: Truck, title: "Logistik Terintegrasi", desc: "Koordinasikan pengiriman langsung dari platform ReMat." },
+  { icon: Leaf, title: "Daur Ulang Berkelanjutan", desc: "Mendukung ekonomi sirkular melalui daur ulang limbah." },
 ];
 
 export default function HomePage() {
@@ -57,10 +58,10 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             {/* Left: Text */}
             <div className="animate-slide-up">
-              <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm font-semibold px-3 py-1.5 rounded-full mb-6">
+              {/* <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm font-semibold px-3 py-1.5 rounded-full mb-6">
                 <Sparkles className="w-4 h-4" />
                 Platform Ekonomi Sirkular #1 Indonesia
-              </div>
+              </div> */}
               <h1 className="text-4xl md:text-5xl xl:text-6xl font-bold text-white leading-tight mb-5 text-balance">
                 Platform Kolaboratif{" "}
                 <span className="text-emerald-400">Distributor-Konsumen</span>{" "}
@@ -80,39 +81,11 @@ export default function HomePage() {
 
               {/* Trust signals */}
               <div className="flex items-center gap-6 mt-8 text-sm text-neutral-400">
-                <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Terverifikasi</span>
-                <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-emerald-400" /> Pengiriman Nasional</span>
-                <span className="flex items-center gap-1.5"><Leaf className="w-4 h-4 text-emerald-400" /> Ramah Lingkungan</span>
+                <span className="flex items-center gap-1.5"><BadgeCheck className="w-4 h-4 text-emerald-400" /> Terverifikasi</span>
+                <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Transaksi Aman</span>
+                <span className="flex items-center gap-1.5"><Leaf className="w-4 h-4 text-emerald-400" /> Berkelanjutan</span>
               </div>
             </div>
-
-            {/* Right: Visual */}
-            {/* <div className="relative hidden md:flex items-center justify-center">
-              <div className="relative w-full max-w-md">
-                
-                <div className="card p-6 shadow-xl">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-remat-green-light rounded-xl flex items-center justify-center text-2xl">♻️</div>
-                    <div>
-                      <p className="font-semibold text-gray-900">Biji Plastik PET Grade A</p>
-                      <p className="text-xs text-gray-400">PT. Green Recycle · Surabaya</p>
-                    </div>
-                    <span className="ml-auto text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full font-medium">Aktif</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 text-center mb-4">
-                    {[["500 kg", "Stok"], ["Grade A", "Kualitas"], ["Rp 12.500", "/ kg"]].map(([v, l]) => (
-                      <div key={l} className="bg-gray-50 rounded-lg p-2">
-                        <p className="font-bold text-sm text-gray-900">{v}</p>
-                        <p className="text-xs text-gray-400">{l}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <button className="btn-primary w-full gap-2">
-                    Lihat Detail <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div> */}
           </div>
         </div>
       </section>
@@ -122,14 +95,9 @@ export default function HomePage() {
       {/* ── Categories Section ────────────────────────────────────────────── */}
       <section className="py-16 bg-gray-50 snap-start min-h-[calc(100vh-64px)] flex flex-col justify-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="section-title">Kategori Material</h2>
-              <p className="section-subtitle">Jelajahi ratusan jenis material industri siap pakai.</p>
-            </div>
-            {/* <Link href="/marketplace" className="flex items-center gap-1 text-sm font-semibold text-remat-green hover:text-remat-green-dark transition-colors">
-              Lihat Semua <ChevronRight className="w-4 h-4" />
-            </Link> */}
+          <div className="text-center mb-8">
+            <h2 className="section-title">Kategori Material</h2>
+            <p className="section-subtitle">Jelajahi ratusan jenis material industri siap pakai.</p>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -166,50 +134,53 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Features Section ─────────────────────────────────────────────── */}
-      <section className="py-16 bg-white snap-start min-h-[calc(100vh-64px)] flex flex-col justify-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-          <div className="text-center mb-12">
-            <h2 className="section-title">Mengapa Memilih ReMat?</h2>
-            <p className="section-subtitle">Solusi lengkap untuk rantai pasok material industri yang berkelanjutan.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="flex gap-4 p-6 card hover:border-remat-green/30 transition-all duration-200">
-                <div className="w-12 h-12 bg-remat-green-light rounded-xl flex items-center justify-center flex-shrink-0">
-                  <f.icon className="w-6 h-6 text-remat-green" />
+      {/* ── Features, CTA Banner & Footer ─────────────────────────────────── */}
+      <div className="snap-start flex flex-col justify-between min-h-[calc(100vh-64px)] bg-white">
+        {/* Features Content */}
+        <section className="py-16 bg-white flex-1 flex flex-col justify-center">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
+            <div className="text-center mb-12">
+              <h2 className="section-title">Mengapa Memilih ReMat?</h2>
+              <p className="section-subtitle">Solusi lengkap untuk rantai pasok material industri yang berkelanjutan.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {FEATURES.map((f) => (
+                <div key={f.title} className="flex gap-4 p-6 card hover:border-remat-green/30 transition-all duration-200">
+                  <div className="w-12 h-12 bg-remat-green-light rounded-xl flex items-center justify-center flex-shrink-0">
+                    <f.icon className="w-6 h-6 text-remat-green" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-1.5">{f.title}</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 mb-1.5">{f.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA Banner + Footer ───────────────────────────────────────────── */}
-      <div className="snap-start flex flex-col justify-between min-h-[calc(100vh-64px)] bg-remat-green">
-        <section className="py-16 flex-1 flex flex-col justify-center">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center w-full">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Siap Bergabung dengan Ekosistem Sirkular?
-            </h2>
-            <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
-              Daftar sekarang dan mulai kontribusi nyata dalam mengurangi limbah industri Indonesia.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link href="/marketplace" className="inline-flex items-center gap-2 bg-white text-remat-green font-bold px-6 py-3 rounded-lg hover:bg-remat-blue transition-colors">
-                <Package className="w-5 h-5" /> Jelajahi Material
-              </Link>
-              <Link href="/search" className="inline-flex items-center gap-2 bg-remat-green-dark text-white font-bold px-6 py-3 rounded-lg hover:bg-remat-green-dark/80 transition-colors">
-                <Sparkles className="w-5 h-5" /> Coba AI Search
-              </Link>
+              ))}
             </div>
           </div>
         </section>
-        <Footer />
+
+        {/* CTA Banner & Footer */}
+        <div className="bg-remat-green">
+          <section className="py-12 text-center w-full">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+                Siap Bergabung dengan Ekosistem Sirkular?
+              </h2>
+              <p className="text-white/80 text-sm mb-6 max-w-xl mx-auto">
+                Daftar sekarang dan mulai kontribusi nyata dalam mengurangi limbah industri Indonesia.
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link href="/marketplace" className="inline-flex items-center gap-2 bg-white text-remat-green font-semibold px-5 py-2.5 rounded-lg hover:bg-remat-blue text-sm transition-colors">
+                  <Package className="w-4 h-4" /> Jelajahi Material
+                </Link>
+                <Link href="/search" className="inline-flex items-center gap-2 bg-remat-green-dark text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-remat-green-dark/80 text-sm transition-colors">
+                  <Sparkles className="w-4 h-4" /> Coba AI Search
+                </Link>
+              </div>
+            </div>
+          </section>
+          <Footer />
+        </div>
       </div>
     </div>
   );

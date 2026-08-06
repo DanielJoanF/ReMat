@@ -1,0 +1,6 @@
+- [x] Fix syntax error @ di marketplace/page.jsx
+- [/] Buat modal konfirmasi + QRIS + WhatsApp di marketplace/[id]/page.jsx
+- [ ] Hubungkan api.createTransaction di handleBeli
+- [ ] Ganti mock di orders/page.jsx dengan api.getMyTransactions()
+- [ ] Ganti mock di orders/[id]/page.jsx dengan api.getTransactionById()
+- [ ] Verifikasi build

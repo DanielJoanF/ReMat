@@ -11,17 +11,21 @@ import {
   FileText,
   Star,
   ChevronLeft,
-  ShoppingCart,
   Phone,
   Plus,
   Minus,
   Share2,
   Award,
+  ShoppingBag,
+  CheckCircle2,
+  X,
+  MessageCircle,
+  QrCode,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import StatusBadge from "@/components/ui/StatusBadge";
-import ChatWidget from "@/components/consumer/ChatWidget";
 import { useAuth } from "@/lib/auth-context";
-import useCartStore from "@/store/cart";
 import { api } from "@/lib/api";
 
 function formatPrice(price, unit) {
@@ -32,16 +36,202 @@ function formatIDR(amount) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
 }
 
+// ─── QRIS Image (placeholder QR – in production use actual payment gateway) ──
+const QRIS_PLACEHOLDER =
+  "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=REMAT-PAYMENT-DEMO&color=1a1a1a&bgcolor=FFFFFF&margin=10";
+
+// ─── Konfirmasi Modal ─────────────────────────────────────────────────────────
+function ConfirmOrderModal({ material, quantity, onConfirm, onClose, isLoading }) {
+  const total = material.price * quantity;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-slide-up">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-remat-green" />
+            <h3 className="font-bold text-gray-900">Konfirmasi Pesanan</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-4">
+          {/* Item */}
+          <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+            <div className="w-12 h-12 bg-remat-green-light rounded-lg flex items-center justify-center flex-shrink-0">
+              <Package className="w-6 h-6 text-remat-green/60" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-gray-900 line-clamp-1">{material.title}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {quantity} {material.unit} × {formatPrice(material.price, material.unit).split(" /")[0]}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Dari: <span className="font-medium">{material.distributorName}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="flex items-center justify-between p-3 bg-remat-green-light rounded-xl">
+            <span className="text-sm font-medium text-gray-700">Total Pembayaran</span>
+            <span className="text-lg font-black text-remat-green">{formatIDR(total)}</span>
+          </div>
+
+          <p className="text-xs text-gray-400 text-center">
+            Dengan mengkonfirmasi, Anda menyetujui syarat & ketentuan pembelian ReMat.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 p-5 pt-0">
+          <button onClick={onClose} className="btn-ghost flex-1" disabled={isLoading}>Batal</button>
+          <button
+            id="confirm-order-btn"
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="btn-primary flex-1 gap-2 disabled:opacity-60"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4" />
+            )}
+            {isLoading ? "Memproses..." : "Konfirmasi Pesanan"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── QRIS Payment Modal ───────────────────────────────────────────────────────
+function QrisPaymentModal({ totalAmount, material, orderId, distributorPhone, onClose }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(formatIDR(totalAmount));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // WhatsApp message
+  const waMessage = encodeURIComponent(
+    `Halo, saya baru saja melakukan pemesanan di ReMat.\n\n` +
+    `📦 *Material:* ${material.title}\n` +
+    `💰 *Total:* ${formatIDR(totalAmount)}\n` +
+    `🔖 *ID Pesanan:* ${orderId || "Baru dibuat"}\n\n` +
+    `Mohon konfirmasi pesanan saya. Terima kasih!`
+  );
+  const waNumber = distributorPhone?.replace(/[^0-9]/g, "") || "6281234567890";
+  const waUrl = `https://wa.me/${waNumber}?text=${waMessage}`;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-slide-up">
+        {/* Header */}
+        <div className="p-5 pb-3 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <QrCode className="w-5 h-5 text-remat-green" />
+              <h3 className="font-bold text-gray-900">Bayar via QRIS</h3>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">Scan QR code di bawah menggunakan aplikasi e-wallet atau mobile banking Anda</p>
+        </div>
+
+        {/* QRIS Code */}
+        <div className="px-5 py-4 flex flex-col items-center">
+          <div className="p-3 border-2 border-dashed border-remat-green/40 rounded-2xl bg-gray-50">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={QRIS_PLACEHOLDER}
+              alt="QRIS Payment Code"
+              width={200}
+              height={200}
+              className="rounded-lg"
+            />
+          </div>
+
+          {/* Amount */}
+          <div className="mt-4 w-full p-3 bg-remat-green-light rounded-xl flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500">Nominal Pembayaran</p>
+              <p className="font-black text-remat-green text-lg">{formatIDR(totalAmount)}</p>
+            </div>
+            <button
+              onClick={handleCopy}
+              className="text-xs font-medium text-remat-green border border-remat-green/30 px-3 py-1.5 rounded-lg hover:bg-remat-green/10 transition-colors"
+            >
+              {copied ? "Disalin ✓" : "Salin Nominal"}
+            </button>
+          </div>
+
+          <p className="text-[11px] text-gray-400 text-center mt-3">
+            Pembayaran berlaku selama <span className="font-semibold text-gray-600">15 menit</span>. 
+            Pastikan nominal sesuai untuk mempercepat proses verifikasi.
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 px-5">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-xs text-gray-400">atau</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </div>
+
+        {/* WhatsApp CTA */}
+        <div className="p-5 pt-3">
+          <p className="text-xs text-gray-500 text-center mb-3">
+            Hubungi penjual untuk konfirmasi pembayaran
+          </p>
+          <a
+            id="whatsapp-seller-btn"
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] hover:bg-[#1ebe5b] text-white font-semibold rounded-xl transition-colors text-sm"
+          >
+            {/* WhatsApp icon SVG */}
+            <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Chat WhatsApp dengan Penjual
+          </a>
+
+          <Link
+            href="/consumer/orders"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 mt-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            onClick={onClose}
+          >
+            Lihat Pesanan Saya
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function MaterialDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { role } = useAuth();
-  const addItem = useCartStore((s) => s.addItem);
 
   const [quantity, setQuantity] = useState(1);
-  const [addedToCart, setAddedToCart] = useState(false);
   const [material, setMaterial] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showQrisModal, setShowQrisModal] = useState(false);
+  const [isOrdering, setIsOrdering] = useState(false);
+  const [orderError, setOrderError] = useState(null);
+  const [createdOrderId, setCreatedOrderId] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -63,6 +253,7 @@ export default function MaterialDetailPage() {
               ...dbMat.distributor,
               rating: dbMat.distributor?.rating || 4.8,
               totalTransactions: dbMat.distributor?.totalTransactions || 120,
+              phone: dbMat.distributor?.user?.phone || null,
             },
             documents: (dbMat.documents || []).map((doc, idx) => ({
               id: doc.id,
@@ -96,10 +287,22 @@ export default function MaterialDetailPage() {
   const isConsumer = role === "CONSUMER";
   const canBuy = isConsumer && material.status === "active";
 
-  const handleAddToCart = () => {
-    addItem(material, quantity);
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+  const handleConfirmOrder = async () => {
+    setIsOrdering(true);
+    setOrderError(null);
+    try {
+      const result = await api.createTransaction({
+        items: [{ materialId: material.id, quantity }],
+        shippingAddress: "",
+      });
+      setCreatedOrderId(result?.id || null);
+      setShowConfirmModal(false);
+      setShowQrisModal(true);
+    } catch (err) {
+      setOrderError(err.message || "Gagal membuat pesanan. Coba lagi.");
+    } finally {
+      setIsOrdering(false);
+    }
   };
 
   return (
@@ -116,9 +319,8 @@ export default function MaterialDetailPage() {
           <span className="text-gray-700 font-medium truncate max-w-xs">{material.title}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* ── Left: Product Info ────────────────────────────────────────── */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div>
             {/* Image + Grade Badge */}
             <div className="relative bg-gradient-to-br from-remat-green-light to-remat-blue rounded-card h-80 flex items-center justify-center overflow-hidden">
               {material.imageUrl ? (
@@ -255,32 +457,34 @@ export default function MaterialDetailPage() {
                 </div>
               </div>
 
+              {/* Error message */}
+              {orderError && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg mb-4 text-sm">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{orderError}</span>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex gap-3">
                 {canBuy ? (
-                  <>
-                    <button
-                      id="add-to-cart-btn"
-                      onClick={handleAddToCart}
-                      className={`btn-primary flex-1 gap-2 ${addedToCart ? "bg-green-600" : ""}`}
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      {addedToCart ? "Ditambahkan! ✓" : "Tambah ke Keranjang"}
-                    </button>
-                    <Link href="/consumer/cart" className="btn-outline gap-2">
-                      Beli Sekarang
-                    </Link>
-                  </>
+                  <button
+                    id="beli-btn"
+                    onClick={() => { setOrderError(null); setShowConfirmModal(true); }}
+                    className="btn-primary flex-1 gap-2"
+                  >
+                    <ShoppingBag className="w-4 h-4" /> Beli
+                  </button>
                 ) : (
                   <div className="flex-1 space-y-2">
                     <div className="flex gap-3">
                       <button
-                        id="add-to-cart-btn-disabled"
+                        id="beli-btn-disabled"
                         disabled
                         title={role === "GUEST" ? "Silakan login sebagai Consumer untuk membeli" : role === "DISTRIBUTOR" ? "Distributor tidak dapat membeli material" : "Material tidak tersedia"}
                         className="btn-primary flex-1 gap-2 opacity-50 cursor-not-allowed"
                       >
-                        <ShoppingCart className="w-4 h-4" /> Tambah ke Keranjang
+                        <ShoppingBag className="w-4 h-4" /> Beli
                       </button>
                       <button className="btn-outline gap-2">
                         <Phone className="w-4 h-4" /> Hubungi Penjual
@@ -296,13 +500,30 @@ export default function MaterialDetailPage() {
               </div>
             </div>
           </div>
-
-          {/* ── Right: AI Chat Widget ─────────────────────────────────────── */}
-          <div className="lg:col-span-1">
-            <ChatWidget materialId={material.id} materialTitle={material.title} inline />
-          </div>
         </div>
       </div>
+
+      {/* Confirm Order Modal */}
+      {showConfirmModal && (
+        <ConfirmOrderModal
+          material={material}
+          quantity={quantity}
+          onConfirm={handleConfirmOrder}
+          onClose={() => setShowConfirmModal(false)}
+          isLoading={isOrdering}
+        />
+      )}
+
+      {/* QRIS Payment Modal */}
+      {showQrisModal && (
+        <QrisPaymentModal
+          totalAmount={material.price * quantity}
+          material={material}
+          orderId={createdOrderId}
+          distributorPhone={material.distributor?.phone}
+          onClose={() => setShowQrisModal(false)}
+        />
+      )}
     </div>
   );
 }
