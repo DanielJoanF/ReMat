@@ -171,9 +171,7 @@ The system uses a dual sans-serif strategy:
 - **Top Header Bar:**
   - Title *"Ringkasan"*, Primary action button `Unggah Data Limbah`.
 - **KPI Summary Cards (Bento 4-Column Grid):**
-  1. **Tingkat Pengalihan Limbah:** `78%` (+5.2% trend).
-  2. **Penghematan Karbon (kg):** `12,450`.
-  3. **Total Pendapatan:** `Rp 45.2M` (+12.4% trend).
+  1. **Tingkat Pengalihan Limbah:** `78%` (+5.2% trend 
   4. **Skor Sirkular:** `92 / 100`.
 - **Analytics & Recent Listings Section:**
   - **Bar Chart:** *"Distribusi Limbah Bulanan"* with year filter.

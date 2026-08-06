@@ -5,9 +5,9 @@
   "description": "ReMat: Platform Kolaboratif Distributor-Konsumen untuk Industri Bebas Limbah",
   "packageManager": "pnpm@9.1.0",
   "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+      "apps/**",
+      "packages/*"
+    ],
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
