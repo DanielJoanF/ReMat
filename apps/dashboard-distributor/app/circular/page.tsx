@@ -12,6 +12,7 @@ import { Modal } from '@/components/ui/modal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/contexts/auth-context';
 import { getData, postData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -69,6 +70,7 @@ function KPICard({ icon, label, value, unit, color, loading }: {
 
 export default function CircularReportPage() {
   const { toast } = useToast();
+  const { isReady } = useAuth();
   const toastRef = useRef(toast);
   useEffect(() => { toastRef.current = toast; }, [toast]);
 
@@ -90,7 +92,12 @@ export default function CircularReportPage() {
     finally { setLoading(false); }
   }, []); // toast stabilized via ref
 
-  useEffect(() => { fetchReports(); }, [fetchReports]);
+  useEffect(() => {
+    // Wait until AuthProvider has written the user identity to localStorage,
+    // so the API request carries the correct x-user-id / x-user-role headers.
+    if (!isReady) return;
+    fetchReports();
+  }, [isReady, fetchReports]);
 
   const handleGenerate = async () => {
     if (!selMonth) { toastRef.current({ type: 'error', message: 'Pilih bulan terlebih dahulu.' }); return; }

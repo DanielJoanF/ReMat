@@ -77,47 +77,7 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@20.19.43)
 
-  apps/marketplace:
-    dependencies:
-      '@remat/config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@remat/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
-      lucide-react:
-        specifier: ^1.28.0
-        version: 1.28.0(react@18.3.1)
-      next:
-        specifier: ^14.2.0
-        version: 14.2.35(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      react:
-        specifier: ^18.3.0
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.3.0
-        version: 18.3.1(react@18.3.1)
-      zustand:
-        specifier: ^5.0.14
-        version: 5.0.14(@types/react@18.3.31)(react@18.3.1)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.3.3
-        version: 18.3.31
-      autoprefixer:
-        specifier: ^10.4.19
-        version: 10.5.4(postcss@8.5.25)
-      postcss:
-        specifier: ^8.4.38
-        version: 8.5.25
-      tailwindcss:
-        specifier: ^3.4.3
-        version: 3.4.19
-      typescript:
-        specifier: ^5.4.5
-        version: 5.9.3
-
-  apps/marketplace/app/dashboard-distributor:
+  apps/dashboard-distributor:
     dependencies:
       '@hookform/resolvers':
         specifier: ^3.4.0
@@ -126,8 +86,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       lucide-react:
-        specifier: ^0.376.0
-        version: 0.376.0(react@18.3.1)
+        specifier: ^1.28.0
+        version: 1.28.0(react@18.3.1)
       next:
         specifier: 14.2.5
         version: 14.2.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -173,6 +133,46 @@ importers:
         version: 8.5.25
       tailwindcss:
         specifier: ^3.4.4
+        version: 3.4.19
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
+  apps/marketplace:
+    dependencies:
+      '@remat/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@remat/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      lucide-react:
+        specifier: ^1.28.0
+        version: 1.28.0(react@18.3.1)
+      next:
+        specifier: ^14.2.0
+        version: 14.2.35(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react:
+        specifier: ^18.3.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.0
+        version: 18.3.1(react@18.3.1)
+      zustand:
+        specifier: ^5.0.14
+        version: 5.0.14(@types/react@18.3.31)(react@18.3.1)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.3.3
+        version: 18.3.31
+      autoprefixer:
+        specifier: ^10.4.19
+        version: 10.5.4(postcss@8.5.25)
+      postcss:
+        specifier: ^8.4.38
+        version: 8.5.25
+      tailwindcss:
+        specifier: ^3.4.3
         version: 3.4.19
       typescript:
         specifier: ^5.4.5
@@ -2175,11 +2175,6 @@ packages:
 
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
-
-  lucide-react@0.376.0:
-    resolution: {integrity: sha512-g91IX3ERD6yUR1TL2dsL4BkcGygpZz/EsqjAeL/kcRQV0EApIOr/9eBfKhYOVyQIcGGuotFGjF3xKLHMEz+b7g==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0
 
   lucide-react@1.28.0:
     resolution: {integrity: sha512-fARAFJULsGuDDydjp6+6blekG/sBIM29TerzLjc9bQUKAcEfrSc4ZQKb25KRz4OMKd87cZTb5dgq0w/T6KufVg==}
@@ -5209,10 +5204,6 @@ snapshots:
       get-func-name: 2.0.2
 
   lru-cache@10.4.3: {}
-
-  lucide-react@0.376.0(react@18.3.1):
-    dependencies:
-      react: 18.3.1
 
   lucide-react@1.28.0(react@18.3.1):
     dependencies:

@@ -19,11 +19,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/contexts/auth-context';
 import { getData, deleteData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
 
 interface Material {
   id: string;
-  name: string;
+  title: string;
 }
 
 interface MaterialDoc {
@@ -67,6 +68,7 @@ export default function MaterialDocumentsPage() {
   const router = useRouter();
   const materialId = params.id as string;
   const { toast } = useToast();
+  const { isReady } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [material, setMaterial] = useState<Material | null>(null);
@@ -99,8 +101,11 @@ export default function MaterialDocumentsPage() {
   }, [materialId, toast]);
 
   useEffect(() => {
-    if (materialId) fetchDocuments();
-  }, [materialId, fetchDocuments]);
+      // Wait until AuthProvider has written the user identity to localStorage,
+      // so the API request carries the correct x-user-id / x-user-role headers.
+      if (!isReady || !materialId) return;
+      fetchDocuments();
+    }, [materialId, fetchDocuments, isReady]);
 
   const countByType = (type: string) =>
     documents.filter((d) => d.type === type).length;
@@ -157,7 +162,7 @@ export default function MaterialDocumentsPage() {
         formData.append('type', determineDocType(file.name));
 
         await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/materials/${materialId}/documents`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/materials/${materialId}/documents`,
           {
             method: 'POST',
             headers: {
@@ -224,7 +229,7 @@ export default function MaterialDocumentsPage() {
           </Button>
           <div>
             <h2 className="text-2xl font-bold text-gray-800">
-              {material?.name || 'Dokumen Material'}
+              {material?.title || 'Dokumen Material'}
             </h2>
             <p className="text-sm text-gray-500">Kelola dokumen dan foto material</p>
           </div>
