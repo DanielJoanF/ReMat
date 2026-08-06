@@ -1,7 +1,7 @@
 const { OpenAI } = require("openai");
 
 const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
-const DEFAULT_OPENROUTER_MODEL = "google/gemini-2.0-flash-exp:free";
+const DEFAULT_OPENROUTER_MODEL = "google/gemini-flash-1.5-8b";
 const TIMEOUT_MS = 15000; // 15s timeout
 
 const getLlmClient = () => {

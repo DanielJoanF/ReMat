@@ -10,7 +10,7 @@
 const { prisma } = require("@remat/database");
 const { generateEmbedding, isEmbeddingAvailable } = require("@remat/ai-core");
 
-const SIMILARITY_THRESHOLD = 0.6;
+const SIMILARITY_THRESHOLD = 0.05;
 const DEFAULT_LIMIT = 10;
 
 /**
@@ -89,8 +89,13 @@ const smartSearch = async (queryText, filters = {}) => {
 
     const results = await prisma.$queryRawUnsafe(sql, ...params);
 
-    // If no results above threshold → return empty with alert prompt
+    // If no results above threshold → fall back to keyword search before returning empty
     if (results.length === 0) {
+      console.log(`[Search] Semantic search returned 0 results for "${queryText}". Falling back to keyword search.`);
+      const keywordResults = await keywordSearch(queryText, filters);
+      if (keywordResults.data.length > 0) {
+        return keywordResults;
+      }
       return {
         data: [],
         searchType: "semantic",
@@ -150,11 +155,15 @@ const keywordSearch = async (queryText, filters = {}) => {
 
   const where = { status: "ACTIVE" };
 
-  // Text search on title and description
+  // Text search on title, description, location, category, and distributor city
   if (queryText) {
     where.OR = [
       { title: { contains: queryText, mode: "insensitive" } },
-      { description: { contains: queryText, mode: "insensitive" } }
+      { description: { contains: queryText, mode: "insensitive" } },
+      { location: { contains: queryText, mode: "insensitive" } },
+      { category: { name: { contains: queryText, mode: "insensitive" } } },
+      { distributor: { city: { contains: queryText, mode: "insensitive" } } },
+      { distributor: { companyName: { contains: queryText, mode: "insensitive" } } }
     ];
   }
 

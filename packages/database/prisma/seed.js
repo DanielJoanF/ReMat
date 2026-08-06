@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { generateEmbedding } = require("../../ai-core");
 const prisma = new PrismaClient();
 
 async function main() {
@@ -266,15 +267,17 @@ async function main() {
     });
     createdMaterials.push(mat);
 
-    // Create corresponding pgvector embedding via raw SQL
+    // Create corresponding pgvector embedding via raw SQL using ai-core generateEmbedding
     try {
-      const dummyVector = JSON.stringify(Array.from({ length: 1536 }, () => (Math.random() * 2 - 1).toFixed(4)));
+      const textToEmbed = `${mat.title} ${category.name} ${mat.location} ${mat.description}`;
+      const { embedding, model } = await generateEmbedding(textToEmbed);
+      const vectorStr = JSON.stringify(embedding);
       await prisma.$executeRawUnsafe(
         `INSERT INTO material_embeddings (id, material_id, embedding, embedding_model, updated_at) 
-         VALUES (gen_random_uuid(), '${mat.id}', '${dummyVector}'::vector, 'text-embedding-3-small', NOW());`
+         VALUES (gen_random_uuid(), '${mat.id}', '${vectorStr}'::vector, '${model || "text-embedding-3-small"}', NOW());`
       );
     } catch (e) {
-      // Ignore if pgvector extension is not fully loaded
+      console.error(`Failed to insert embedding for material ${mat.id}:`, e.message);
     }
   }
 
