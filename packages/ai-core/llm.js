@@ -2,13 +2,11 @@ const { OpenAI } = require("openai");
 
 const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
 const DEFAULT_OPENROUTER_MODEL = "google/gemini-2.0-flash-exp:free";
-const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 const TIMEOUT_MS = 15000; // 15s timeout
 
 const getLlmClient = () => {
   const groqKey = process.env.GROQ_API_KEY;
   const openrouterKey = process.env.OPENROUTER_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
 
   // 1. Primary: Groq API
   if (groqKey) {
@@ -36,15 +34,7 @@ const getLlmClient = () => {
     };
   }
 
-  // 3. Fallback: OpenAI API
-  if (openaiKey) {
-    return {
-      client: new OpenAI({ apiKey: openaiKey }),
-      model: process.env.LLM_MODEL || DEFAULT_OPENAI_MODEL
-    };
-  }
-
-  throw new Error("[ai-core] Neither GROQ_API_KEY, OPENROUTER_API_KEY, nor OPENAI_API_KEY environment variable is set.");
+  throw new Error("[ai-core] Neither GROQ_API_KEY nor OPENROUTER_API_KEY environment variable is set.");
 };
 
 /**
@@ -89,13 +79,12 @@ const isLlmAvailable = () => {
   if (global.isLlmAvailableMock !== undefined) {
     return global.isLlmAvailableMock;
   }
-  return !!(process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY);
+  return !!(process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY);
 };
 
 module.exports = {
   generateText,
   isLlmAvailable,
   DEFAULT_GROQ_MODEL,
-  DEFAULT_OPENROUTER_MODEL,
-  DEFAULT_OPENAI_MODEL
+  DEFAULT_OPENROUTER_MODEL
 };

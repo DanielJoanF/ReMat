@@ -37,10 +37,9 @@ const generateEmbedding = async (text) => {
   }
 
   const openrouterKey = process.env.OPENROUTER_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
 
   let client = null;
-  let model = process.env.EMBEDDING_MODEL || DEFAULT_MODEL;
+  let model = process.env.EMBEDDING_MODEL || "openai/text-embedding-3-small";
 
   if (openrouterKey) {
     client = new OpenAI({
@@ -51,11 +50,6 @@ const generateEmbedding = async (text) => {
         "X-Title": "ReMat Platform"
       }
     });
-    if (!process.env.EMBEDDING_MODEL) {
-      model = "openai/text-embedding-3-small";
-    }
-  } else if (openaiKey) {
-    client = new OpenAI({ apiKey: openaiKey });
   }
 
   if (!client) {
