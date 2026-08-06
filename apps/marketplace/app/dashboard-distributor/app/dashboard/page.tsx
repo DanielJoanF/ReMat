@@ -45,6 +45,11 @@ export default function DashboardPage() {
 
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -159,9 +164,9 @@ export default function DashboardPage() {
               </select>
             </div>
             <div className="h-[260px]">
-              {loading ? (
-                <SkeletonText lines={5} />
-              ) : data?.revenueChart && data.revenueChart.length > 0 ? (
+                          {loading ? (
+                            <SkeletonText lines={5} />
+                          ) : mounted && data?.revenueChart && data.revenueChart.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data.revenueChart} barCategoryGap="30%" margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
