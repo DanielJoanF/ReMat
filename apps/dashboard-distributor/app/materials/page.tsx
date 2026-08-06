@@ -432,13 +432,15 @@ function MaterialsPageInner() {
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                              onClick={() => setDeleteModal({ open: true, material: item })}
-                              className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
-                              title="Hapus"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {['DRAFT', 'REJECTED'].includes(item.status) && (
+                              <button
+                                onClick={() => setDeleteModal({ open: true, material: item })}
+                                className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
+                                title="Hapus"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                             {item.status === 'DRAFT' && (
                               <button
                                 onClick={() => handleSubmitMaterial(item)}
