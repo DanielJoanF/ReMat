@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import ChatWidget from "@/components/consumer/ChatWidget";
 
 export default function ConsumerLayout({ children }) {
   const { role, isLoading } = useAuth();
@@ -26,8 +25,6 @@ export default function ConsumerLayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
       {children}
-      {/* Floating Chat Widget (shown across all consumer pages) */}
-      <ChatWidget floating />
     </div>
   );
 }

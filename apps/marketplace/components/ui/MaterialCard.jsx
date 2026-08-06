@@ -163,15 +163,15 @@ export default function MaterialCard({ material, variant = "grid" }) {
             </span>
           </div>
 
-          {/* Footer: Price + Arrow */}
+          {/* Footer: Price + Beli Button */}
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
             <div>
               <p className="text-xs text-gray-400 mb-0.5">Estimasi Harga</p>
               <p className="text-base font-bold text-remat-green">{formatPrice(price, unit)}</p>
             </div>
-            <div className="w-8 h-8 rounded-full bg-remat-green-light flex items-center justify-center group-hover:bg-remat-green transition-colors">
-              <ArrowRight className="w-4 h-4 text-remat-green group-hover:text-white transition-colors" />
-            </div>
+            <span className="btn-primary text-xs px-3 py-1.5">
+              Beli
+            </span>
           </div>
         </div>
       </div>
