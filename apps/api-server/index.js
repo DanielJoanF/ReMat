@@ -19,6 +19,7 @@ const analyticsRoutes = require("./routes/analytics");
 const circularReportRoutes = require("./routes/circularReports");
 const chatbotRoutes = require("./routes/chatbot");
 const bannerRoutes = require("./routes/banners");
+const authRoutes = require("./routes/auth");
 
 const { apiLimiter, aiLimiter } = require("./middlewares/rateLimit");
 
@@ -49,6 +50,7 @@ app.use("/analytics", analyticsRoutes);
 app.use("/circular-reports", circularReportRoutes);
 app.use("/chat", aiLimiter, chatbotRoutes);
 app.use("/banners", bannerRoutes);
+app.use("/auth", authRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

@@ -3,11 +3,29 @@
 import { useState, useEffect } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-const ADMIN_HEADERS = {
-  "Content-Type": "application/json",
-  "x-user-id": "admin-123",
-  "x-user-role": "ADMIN"
+
+const getAdminHeaders = () => {
+  if (typeof window === "undefined") return { "Content-Type": "application/json" };
+  const userId = sessionStorage.getItem("remat_user_id") || "admin-123";
+  const userRole = sessionStorage.getItem("remat_user_role") || "ADMIN";
+  return {
+    "Content-Type": "application/json",
+    "x-user-id": userId,
+    "x-user-role": userRole
+  };
 };
+
+const ADMIN_HEADERS = new Proxy({}, {
+  get(target, prop) {
+    return getAdminHeaders()[prop];
+  },
+  ownKeys(target) {
+    return Reflect.ownKeys(getAdminHeaders());
+  },
+  getOwnPropertyDescriptor(target, prop) {
+    return Reflect.getOwnPropertyDescriptor(getAdminHeaders(), prop);
+  }
+});
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState("moderation");
@@ -29,6 +47,31 @@ export default function AdminDashboardPage() {
   const [notification, setNotification] = useState("");
 
   useEffect(() => {
+    // 1. Process URL query parameters for session transfer
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    const sessionName = params.get("session_name");
+    const sessionRole = params.get("session_role");
+
+    if (sessionId && sessionName && sessionRole) {
+      sessionStorage.setItem("remat_user_id", sessionId);
+      sessionStorage.setItem("remat_user_name", sessionName);
+      sessionStorage.setItem("remat_user_role", sessionRole);
+
+      // Clean query params from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+
+    // 2. Read session from sessionStorage and guard access
+    const userId = sessionStorage.getItem("remat_user_id");
+    const userRole = sessionStorage.getItem("remat_user_role");
+
+    if (!userId || userRole !== "ADMIN") {
+      window.location.href = "http://localhost:3000/login";
+      return;
+    }
+
     fetchAllData();
   }, []);
 
@@ -173,10 +216,16 @@ export default function AdminDashboardPage() {
         </div>
         <div className="flex items-center gap-4 text-xs">
           <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 px-3 py-1 rounded-full font-medium">
-            Role: System Administrator
+            Admin: {typeof window !== "undefined" ? sessionStorage.getItem("remat_user_name") || "Administrator" : "Administrator"}
           </span>
           <button onClick={fetchAllData} className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition">
             Refresh Data
+          </button>
+          <button onClick={() => {
+            sessionStorage.clear();
+            window.location.href = "http://localhost:3000/?logout=true";
+          }} className="bg-red-900 hover:bg-red-800 text-red-200 px-3 py-1.5 rounded transition font-semibold">
+            Keluar
           </button>
         </div>
       </header>

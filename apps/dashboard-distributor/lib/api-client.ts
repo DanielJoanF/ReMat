@@ -27,8 +27,8 @@ function getStoredHeaders(): Record<string, string> {
   if (typeof window === 'undefined') return {};
 
   const headers: Record<string, string> = {};
-  const userId = localStorage.getItem('x-user-id');
-  const userRole = localStorage.getItem('x-user-role');
+  const userId = sessionStorage.getItem('x-user-id');
+  const userRole = sessionStorage.getItem('x-user-role');
 
   if (userId) headers['x-user-id'] = userId;
   if (userRole) headers['x-user-role'] = userRole;

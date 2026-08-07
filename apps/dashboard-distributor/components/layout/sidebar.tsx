@@ -165,7 +165,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
         {!collapsed && <span>Bantuan</span>}
       </Link>
       <button
-        onClick={() => { logout(); router.push('/'); }}
+        onClick={() => { logout(); }}
         className={cn(
           'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface',
           collapsed && 'justify-center px-2'
