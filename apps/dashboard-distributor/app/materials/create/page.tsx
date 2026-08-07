@@ -76,8 +76,8 @@ export default function CreateMaterialPage() {
     try {
       setSubmitting(true);
       await postData('/materials', {
-        name: data.nama, description: data.deskripsi, categoryId: data.kategori,
-        grade: data.grade, price: data.harga, unit: data.unit, stock: data.stok,
+        title: data.nama, description: data.deskripsi, categoryId: data.kategori,
+        qualityGrade: data.grade, price: data.harga, unit: data.unit, quantity: data.stok,
         location: data.lokasi, status: 'DRAFT',
       });
       toast({ type: 'success', message: 'Material berhasil disimpan sebagai draf' });

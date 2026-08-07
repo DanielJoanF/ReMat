@@ -44,18 +44,17 @@ interface SidebarProps {
 function BrandHeader({ collapsed }: { collapsed: boolean }) {
   if (collapsed) {
     return (
-      <div className="flex justify-center py-5">
-        <h2 className="text-[18px] font-black text-[#065F46] tracking-wide">R</h2>
+      <div className="flex justify-center py-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="Logo" className="h-12 w-auto" />
       </div>
     );
   }
   return (
-    <div className="flex items-center gap-2.5 px-4 py-5">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#065F46] text-white">
-        <Recycle className="h-5 w-5" />
-      </div>
+    <div className="flex items-center gap-2.5 px-4 py-4">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
       <div>
-        <h2 className="text-[17px] font-extrabold leading-tight tracking-wide text-[#065F46]">REMAT</h2>
         <p className="text-[11px] font-medium text-[#64748B] leading-tight">Distributor Dashboard</p>
       </div>
     </div>

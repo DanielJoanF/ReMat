@@ -66,7 +66,7 @@ function normalizeTransaction(tx) {
 }
 
 // ─── QRIS Placeholder ─────────────────────────────────────────────────────────
-const QRIS_PLACEHOLDER = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=REMAT-PAYMENT-DEMO&color=1a1a1a&bgcolor=FFFFFF&margin=10";
+const QRIS_PLACEHOLDER = "/qris.jpeg";
 
 function QrisPaymentModal({ totalAmount, orderId, distributorPhone, onClose }) {
   const [copied, setCopied] = useState(false);

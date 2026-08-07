@@ -226,7 +226,7 @@ function MarketplaceContent() {
 
           {/* Harga */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Estimasi Harga Per Kg</h3>
+            <h3 className="font-semibold text-gray-900 mb-3">Estimasi Harga</h3>
             <div className="flex gap-2">
               <input
                 id="min-price-filter"
@@ -367,17 +367,7 @@ function MarketplaceContent() {
             />
           )}
 
-          {/* Alert Fallback Box */}
-          {filteredMaterials.length > 0 && (
-            <div className="mt-8 border-2 border-dashed border-remat-green/30 rounded-card p-6 text-center">
-              <Search className="w-8 h-8 text-remat-green/40 mx-auto mb-3" />
-              <h3 className="font-bold text-gray-900 mb-1.5">Tidak menemukan material spesifik?</h3>
-              <p className="text-sm text-gray-500 mb-4 max-w-sm mx-auto">
-                Aktifkan alert dan kami akan memberitahu Anda saat material yang Anda cari tersedia.
-              </p>
-              <a href="/consumer/alerts" className="btn-outline">Buat Alert</a>
-            </div>
-          )}
+
         </div>
       </div>
     </div>

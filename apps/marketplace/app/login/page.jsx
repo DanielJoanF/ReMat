@@ -4,12 +4,13 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { Mail, Lock, Loader2, Sparkles, ShieldAlert } from "lucide-react";
+import { Mail, Lock, Loader2, Sparkles, ShieldAlert, Info } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/marketplace";
+  const showLoginNotice = searchParams.get("redirect") && searchParams.get("redirect").includes("/marketplace/");
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -52,6 +53,13 @@ function LoginForm() {
           <h2 className="text-2xl font-bold text-white tracking-tight">Selamat Datang Kembali</h2>
           <p className="text-sm text-white/70 mt-1">Masuk ke akun ReMat Anda</p>
         </div>
+
+        {showLoginNotice && (
+          <div className="flex items-center gap-3 p-4 bg-amber-950/60 border border-amber-800 rounded-xl text-amber-200 text-sm mb-6">
+            <Info className="w-5 h-5 flex-shrink-0 text-amber-400" />
+            <span>Silakan login terlebih dahulu untuk dapat melakukan pembelian.</span>
+          </div>
+        )}
 
         {error && (
           <div className="flex items-center gap-3 p-4 bg-red-950/60 border border-red-800 rounded-xl text-red-200 text-sm mb-6">
@@ -122,7 +130,6 @@ function LoginForm() {
             ) : (
               <>
                 Masuk
-                <Sparkles className="w-4 h-4" />
               </>
             )}
           </button>
