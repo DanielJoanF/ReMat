@@ -6,7 +6,6 @@ const FOOTER_LINKS = {
     { href: "/marketplace", label: "Marketplace" },
     { href: "/search", label: "AI Smart Search" },
     { href: "/consumer/orders", label: "Pesanan Saya" },
-    { href: "/consumer/alerts", label: "Alert Material" },
   ],
   Informasi: [
     { href: "/blog", label: "Blog & Insight" },

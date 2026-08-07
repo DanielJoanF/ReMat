@@ -13,20 +13,19 @@ import {
   Sparkles,
   MoreVertical,
   Package,
-  Bell,
   ChevronRight,
 } from "lucide-react";
 
 // ─── Mock AI Responses ───────────────────────────────────────────────────────
 const MOCK_RESPONSES = [
   {
-    trigger: ["kirim", "ongkir", "pengiriman", "delivery"],
-    message: "Pengiriman tersedia ke seluruh wilayah Indonesia. Untuk Jawa dan Bali estimasi 2-3 hari kerja, luar Jawa 4-7 hari kerja. Biaya pengiriman dihitung berdasarkan berat dan jarak.",
+    trigger: ["halo", "hai", "siang", "pagi", "sore", "tanya"],
+    message: "Halo! Saya adalah Asisten AI ReMat. Ada yang bisa saya bantu terkait pencarian material daur ulang atau transaksi hari ini?",
     materials: [],
   },
   {
-    trigger: ["plastik", "pet", "hdpe", "pp"],
-    message: "Berikut beberapa material plastik yang tersedia di ReMat saat ini:",
+    trigger: ["plastik", "pet", "hdpe", "ldpe", "pp"],
+    message: "ReMat memiliki persediaan material plastik berkualitas tinggi seperti PET bening, PP regrind, dan HDPE scrap. Berikut adalah beberapa rekomendasi untuk Anda:",
     materials: [
       { id: "1", title: "Biji Plastik PET Grade A", price: 12500, unit: "kg", location: "Surabaya" },
       { id: "7", title: "Biji Plastik PP Clear Regrind", price: 9800, unit: "kg", location: "Tangerang" },
@@ -36,12 +35,6 @@ const MOCK_RESPONSES = [
     trigger: ["harga", "berapa", "price"],
     message: "Harga material di ReMat bervariasi tergantung jenis, grade, dan kondisi. Plastik PET berkisar Rp 8.000-15.000/kg, scrap besi Rp 3.500-5.000/kg, dan aluminium Rp 15.000-22.000/kg.",
     materials: [],
-  },
-  {
-    trigger: ["alert", "notif", "tersedia", "stok"],
-    message: "Anda bisa mengaktifkan alert untuk mendapatkan notifikasi saat material yang Anda cari tersedia. Fitur ini gratis untuk semua pengguna terdaftar!",
-    materials: [],
-    cta: { label: "Kelola Alert Saya", href: "/consumer/alerts" },
   },
 ];
 
@@ -58,7 +51,7 @@ function getAIResponse(userMessage) {
     if (r.trigger.some((t) => lower.includes(t))) return r;
   }
   return {
-    message: "Terima kasih atas pertanyaannya! Untuk informasi lebih lanjut, Anda bisa menelusuri marketplace kami atau membuat alert jika material spesifik yang Anda cari belum tersedia.",
+    message: "Terima kasih atas pertanyaannya! Untuk informasi lebih lanjut, Anda bisa menelusuri marketplace kami untuk mencari material daur ulang yang Anda butuhkan.",
     materials: [],
     cta: { label: "Jelajahi Marketplace", href: "/marketplace" },
   };
@@ -118,7 +111,7 @@ function ChatMessage({ msg }) {
         {/* CTA */}
         {msg.cta && (
           <Link href={msg.cta.href} className="text-xs font-semibold text-remat-green flex items-center gap-1 hover:underline">
-            {msg.cta.label === "Kelola Alert Saya" ? <Bell className="w-3 h-3" /> : <Package className="w-3 h-3" />}
+            <Package className="w-3 h-3" />
             {msg.cta.label} →
           </Link>
         )}

@@ -206,11 +206,10 @@ export default function AdminDashboardPage() {
       {/* Top Header Navigation */}
       <header className="bg-slate-900 text-white border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center font-bold text-lg text-white">
-            R
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
           <div>
-            <h1 className="font-bold text-lg tracking-tight">ReMat Admin Moderation Console</h1>
+            <h1 className="font-bold text-lg tracking-tight">Admin Moderation Console</h1>
             <p className="text-xs text-slate-400">Collaborative Industrial Zero-Waste Platform</p>
           </div>
         </div>

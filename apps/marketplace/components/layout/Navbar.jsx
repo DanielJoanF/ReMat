@@ -4,17 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
-  ShoppingCart,
-  Bell,
   ChevronDown,
   User,
   LogOut,
-  Settings,
   Package,
   LayoutDashboard,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import useCartStore from "@/store/cart";
 
 const NAV_LINKS = [
   { href: "/marketplace", label: "Marketplace" },
@@ -25,17 +21,9 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, role, setRole, logout, ROLES } = useAuth();
-  const totalItems = useCartStore((s) => s.getTotalItems());
 
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  const roleLabel = {
-    GUEST: "Tamu",
-    CONSUMER: "Konsumen",
-    DISTRIBUTOR: "Distributor",
-    ADMIN: "Admin",
-  };
 
   const roleBadgeColor = {
     GUEST: "bg-gray-100 text-gray-600",
@@ -47,17 +35,11 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center gap-4 h-16">
+        <div className="flex items-center gap-4 h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0 mr-2">
-            <div className="w-8 h-8 bg-remat-green rounded-lg flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <span className="font-bold text-xl text-gray-900 tracking-tight">
-              Re<span className="text-remat-green">Mat</span>
-            </span>
+          <Link href="/" className="flex items-center flex-shrink-0 mr-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
           </Link>
 
           {/* Nav Links */}
@@ -77,58 +59,9 @@ export default function Navbar() {
             ))}
           </nav>
 
-
-
           {/* Right side actions */}
-          <div className="ml-auto flex items-center gap-2">
-            {/* Dev: Role Switcher */}
-            <div className="relative">
-              <button
-                id="role-switcher-btn"
-                onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}
-                className={`hidden sm:flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full border ${roleBadgeColor[role]} border-current/20 hover:opacity-80 transition-opacity`}
-                title="Dev: Ganti Role"
-              >
-                <Settings className="w-3 h-3" />
-                {roleLabel[role]}
-                <ChevronDown className="w-3 h-3" />
-              </button>
-              {showRoleSwitcher && (
-                <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 animate-fade-in">
-                  <p className="px-3 py-1 text-xs text-gray-400 font-medium">Dev: Ganti Role</p>
-                  {ROLES.map((r) => (
-                    <button
-                      key={r}
-                      id={`role-${r.toLowerCase()}`}
-                      onClick={() => { setRole(r); setShowRoleSwitcher(false); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${role === r ? "text-remat-green font-semibold" : "text-gray-700"}`}
-                    >
-                      {roleLabel[r]}
-                      {role === r && <span className="w-2 h-2 rounded-full bg-remat-green" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="ml-auto flex items-center gap-2">            
 
-            {/* Cart (Consumer only) */}
-            {role === "CONSUMER" && (
-              <Link href="/consumer/cart" id="cart-btn" className="relative p-2 text-gray-600 hover:text-remat-green hover:bg-remat-green-light rounded-lg transition-colors">
-                <ShoppingCart className="w-5 h-5" />
-                {totalItems > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-remat-green text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {totalItems > 9 ? "9+" : totalItems}
-                  </span>
-                )}
-              </Link>
-            )}
-
-            {/* Alerts (Consumer only) */}
-            {role === "CONSUMER" && (
-              <Link href="/consumer/alerts" className="p-2 text-gray-600 hover:text-remat-green hover:bg-remat-green-light rounded-lg transition-colors">
-                <Bell className="w-5 h-5" />
-              </Link>
-            )}
 
             {/* Distributor Dashboard link */}
             {role === "DISTRIBUTOR" && (
