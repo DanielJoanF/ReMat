@@ -166,8 +166,8 @@ export default function MaterialDocumentsPage() {
           {
             method: 'POST',
             headers: {
-              'x-user-id': localStorage.getItem('x-user-id') || 'dist-1',
-              'x-user-role': localStorage.getItem('x-user-role') || 'DISTRIBUTOR',
+              'x-user-id': sessionStorage.getItem('x-user-id') || 'dist-1',
+              'x-user-role': sessionStorage.getItem('x-user-role') || 'DISTRIBUTOR',
             },
             body: formData,
           }

@@ -467,10 +467,20 @@ export default function MaterialDetailPage() {
 
               {/* Action Buttons */}
               <div className="flex gap-3">
-                {canBuy ? (
+                {role === "CONSUMER" && material.status === "active" ? (
                   <button
                     id="beli-btn"
                     onClick={() => { setOrderError(null); setShowConfirmModal(true); }}
+                    className="btn-primary flex-1 gap-2"
+                  >
+                    <ShoppingBag className="w-4 h-4" /> Beli
+                  </button>
+                ) : role === "GUEST" && material.status === "active" ? (
+                  <button
+                    id="beli-btn"
+                    onClick={() => {
+                      router.push(`/login?redirect=${encodeURIComponent(`/marketplace/${material.id}`)}`);
+                    }}
                     className="btn-primary flex-1 gap-2"
                   >
                     <ShoppingBag className="w-4 h-4" /> Beli
@@ -481,7 +491,7 @@ export default function MaterialDetailPage() {
                       <button
                         id="beli-btn-disabled"
                         disabled
-                        title={role === "GUEST" ? "Silakan login sebagai Consumer untuk membeli" : role === "DISTRIBUTOR" ? "Distributor tidak dapat membeli material" : "Material tidak tersedia"}
+                        title={role === "DISTRIBUTOR" ? "Distributor tidak dapat membeli material" : "Material tidak tersedia"}
                         className="btn-primary flex-1 gap-2 opacity-50 cursor-not-allowed"
                       >
                         <ShoppingBag className="w-4 h-4" /> Beli
@@ -491,8 +501,7 @@ export default function MaterialDetailPage() {
                       </button>
                     </div>
                     <p className="text-xs text-center text-gray-400">
-                      {role === "GUEST" ? "Login sebagai Consumer untuk membeli material" :
-                       role === "DISTRIBUTOR" ? "Akun Distributor tidak dapat melakukan pembelian" :
+                      {role === "DISTRIBUTOR" ? "Akun Distributor tidak dapat melakukan pembelian" :
                        "Status material tidak tersedia untuk dibeli"}
                     </p>
                   </div>

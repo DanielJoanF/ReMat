@@ -24,7 +24,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, role, setRole, ROLES } = useAuth();
+  const { user, role, setRole, logout, ROLES } = useAuth();
   const totalItems = useCartStore((s) => s.getTotalItems());
 
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
@@ -166,7 +166,7 @@ export default function Navbar() {
                       <User className="w-4 h-4" /> Profil
                     </Link>
                     <button
-                      onClick={() => { setRole("GUEST"); setShowUserMenu(false); }}
+                      onClick={() => { logout(); setShowUserMenu(false); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                     >
                       <LogOut className="w-4 h-4" /> Keluar
@@ -175,13 +175,13 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <button
+              <Link
+                href="/login"
                 id="signin-btn"
-                onClick={() => { setRole("CONSUMER"); }}
                 className="btn-primary text-sm px-4 py-2"
               >
                 Masuk
-              </button>
+              </Link>
             )}
           </div>
         </div>

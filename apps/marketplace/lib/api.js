@@ -8,8 +8,8 @@ const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000").re
 
 function getAuthHeaders() {
   if (typeof window === "undefined") return {};
-  const userId = localStorage.getItem("remat_user_id") || "dummy-consumer-id";
-  const userRole = localStorage.getItem("remat_user_role") || "CONSUMER";
+  const userId = sessionStorage.getItem("remat_user_id") || "dummy-consumer-id";
+  const userRole = sessionStorage.getItem("remat_user_role") || "CONSUMER";
   return {
     "x-user-id": userId,
     "x-user-role": userRole,
