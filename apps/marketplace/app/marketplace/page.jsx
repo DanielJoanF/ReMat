@@ -40,6 +40,7 @@ function MarketplaceContent() {
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
   // Filter state (synced with URL)
   const [filters, setFilters] = useState({
@@ -158,64 +159,67 @@ function MarketplaceContent() {
             Menampilkan <strong>{filteredMaterials.length}</strong> material
           </p>
         </div>
-        <button
-          id="mobile-filter-btn"
-          onClick={() => setShowMobileFilter(true)}
-          className="lg:hidden btn-outline text-sm gap-2"
-        >
-          <Filter className="w-4 h-4" /> Filter
-        </button>
       </div>
 
-      <div className="flex gap-6">
-        {/* ── Sidebar Filter ─────────────────────────────────────────────── */}
-        <aside className={`
-          w-72 flex-shrink-0 space-y-6
-          ${showMobileFilter
-            ? "fixed inset-y-0 left-0 z-50 bg-white p-6 overflow-y-auto shadow-xl animate-slide-up"
-            : "hidden lg:block"
-          }
-        `}>
-          {/* Mobile close */}
-          <div className="flex items-center justify-between lg:hidden">
-            <h2 className="font-bold text-gray-900">Filter</h2>
-            <button onClick={() => setShowMobileFilter(false)}><X className="w-5 h-5" /></button>
-          </div>
-
+      {/* Filter Bar on Top */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+          <h2 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+            <SlidersHorizontal className="w-4 h-4 text-remat-green" /> Filter Pencarian
+          </h2>
           {hasFilters && (
-            <button onClick={clearFilters} className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
-              <X className="w-3.5 h-3.5" /> Hapus Semua Filter
+            <button onClick={clearFilters} className="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1">
+              <X className="w-3 h-3" /> Hapus Semua Filter
             </button>
           )}
-
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-5">
           {/* Kategori */}
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4" /> Kategori Material
-            </h3>
-            <div className="space-y-2">
-              {categoriesList.map((cat) => (
-                <label key={cat} className="flex items-center gap-2.5 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={filters.categories.includes(cat)}
-                    onChange={() => toggleCategory(cat)}
-                    className="w-4 h-4 rounded border-gray-300 text-remat-green focus:ring-remat-green/20"
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-remat-green transition-colors">{cat}</span>
-                </label>
-              ))}
-            </div>
+          <div className="relative">
+            <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Kategori Material</span>
+            <button
+              id="category-dropdown-btn"
+              type="button"
+              onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+              className="w-full flex items-center justify-between input-base h-10.5 font-medium border-gray-200 bg-white"
+            >
+              <span className="truncate text-sm text-gray-700">
+                {filters.categories.length > 0
+                  ? `${filters.categories.length} Terpilih`
+                  : "Pilih Kategori"}
+              </span>
+              <SlidersHorizontal className="w-4 h-4 text-gray-400" />
+            </button>
+            
+            {isCategoryOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsCategoryOpen(false)} />
+                <div className="absolute left-0 mt-1.5 w-60 bg-white border border-gray-200 rounded-xl shadow-lg p-3 space-y-1.5 max-h-56 overflow-y-auto z-20">
+                  {categoriesList.map((cat) => (
+                    <label key={cat} className="flex items-center gap-2.5 cursor-pointer group py-0.5">
+                      <input
+                        type="checkbox"
+                        checked={filters.categories.includes(cat)}
+                        onChange={() => toggleCategory(cat)}
+                        className="w-4 h-4 rounded border-gray-300 text-remat-green focus:ring-remat-green/20"
+                      />
+                      <span className="text-xs text-gray-700 group-hover:text-remat-green transition-colors">{cat}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Lokasi */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Lokasi (Kota)</h3>
+            <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Lokasi (Kota)</span>
             <select
               id="location-filter"
               value={filters.location}
               onChange={(e) => applyFilters({ ...filters, location: e.target.value })}
-              className="input-base"
+              className="input-base h-10.5 font-medium border-gray-200"
             >
               <option value="">Semua Kota</option>
               {locationsList.map((loc) => (
@@ -226,7 +230,7 @@ function MarketplaceContent() {
 
           {/* Harga */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Estimasi Harga</h3>
+            <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Estimasi Harga</span>
             <div className="flex gap-2">
               <input
                 id="min-price-filter"
@@ -234,7 +238,7 @@ function MarketplaceContent() {
                 placeholder="Min"
                 value={filters.minPrice}
                 onChange={(e) => applyFilters({ ...filters, minPrice: e.target.value })}
-                className="input-base"
+                className="input-base h-10.5 border-gray-200"
               />
               <input
                 id="max-price-filter"
@@ -242,21 +246,21 @@ function MarketplaceContent() {
                 placeholder="Maks"
                 value={filters.maxPrice}
                 onChange={(e) => applyFilters({ ...filters, maxPrice: e.target.value })}
-                className="input-base"
+                className="input-base h-10.5 border-gray-200"
               />
             </div>
           </div>
 
           {/* Grade */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Grade Kualitas</h3>
-            <div className="flex flex-wrap gap-2">
+            <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Grade Kualitas</span>
+            <div className="flex flex-wrap gap-1.5">
               {GRADES.map((grade) => (
                 <button
                   key={grade}
                   id={`grade-filter-${grade.toLowerCase().replace(" ", "-")}`}
                   onClick={() => toggleGrade(grade)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                  className={`px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all ${
                     filters.grades.includes(grade)
                       ? "bg-remat-green text-white border-remat-green"
                       : "bg-white text-gray-600 border-gray-200 hover:border-remat-green hover:text-remat-green"
@@ -268,45 +272,15 @@ function MarketplaceContent() {
             </div>
           </div>
 
-          {/* Smart Match Promo */}
-          <div className="bg-gradient-to-br from-remat-green to-remat-green-dark rounded-card p-5 text-white">
-            <p className="font-bold mb-1 text-sm">✨ ReMat Smart Match</p>
-            <p className="text-xs text-white/80 mb-3">Biarkan AI menemukan material terbaik sesuai kebutuhan Anda.</p>
-            <a href="/search" className="inline-block bg-white text-remat-green text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-remat-blue transition-colors">
-              Coba Sekarang
-            </a>
-          </div>
-        </aside>
-
-        {/* Mobile overlay */}
-        {showMobileFilter && (
-          <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setShowMobileFilter(false)} />
-        )}
-
-        {/* ── Main Content ───────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0">
-          {/* Toolbar */}
-          <div className="flex items-center gap-3 mb-5 flex-wrap">
-            {/* Search Bar */}
-            <div className="relative flex-[2] min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                id="catalog-search"
-                type="search"
-                placeholder="Cari material..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="input-base pl-9 pr-4 h-10 text-sm bg-white"
-              />
-            </div>
-
-            {/* Sort */}
-            <div className="relative flex-1 min-w-36">
+          {/* Urutkan */}
+          <div>
+            <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Urutkan</span>
+            <div className="relative">
               <select
                 id="sort-select"
                 value={filters.sort}
                 onChange={(e) => applyFilters({ ...filters, sort: e.target.value })}
-                className="input-base pr-8 appearance-none bg-white"
+                className="input-base h-10.5 font-medium border-gray-200 appearance-none bg-white pr-8"
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -314,61 +288,62 @@ function MarketplaceContent() {
               </select>
               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Active filters pills */}
-            {hasFilters && (
-              <div className="flex flex-wrap gap-1.5">
-                {filters.categories.map((c) => (
-                  <span key={c} className="inline-flex items-center gap-1 text-xs bg-remat-green-light text-remat-green px-2 py-1 rounded-full font-medium">
-                    {c} <button onClick={() => toggleCategory(c)}><X className="w-3 h-3" /></button>
-                  </span>
-                ))}
-                {filters.location && (
-                  <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-medium">
-                    📍 {filters.location} <button onClick={() => applyFilters({ ...filters, location: "" })}><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* View toggle */}
-            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 ml-auto">
-              <button id="grid-view-btn" onClick={() => setViewMode("grid")} className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-white shadow-sm text-remat-green" : "text-gray-400 hover:text-gray-600"}`}>
-                <Grid3X3 className="w-4 h-4" />
-              </button>
-              <button id="list-view-btn" onClick={() => setViewMode("list")} className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-white shadow-sm text-remat-green" : "text-gray-400 hover:text-gray-600"}`}>
-                <List className="w-4 h-4" />
-              </button>
-            </div>
+      {/* Main Content */}
+      <div className="flex-1 min-w-0">
+        {/* Toolbar */}
+        <div className="flex items-center gap-3 mb-5 flex-wrap">
+          {/* Search Bar */}
+          <div className="relative flex-[2] min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              id="catalog-search"
+              type="search"
+              placeholder="Cari material..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input-base pl-9 pr-4 h-10 text-sm bg-white"
+            />
           </div>
 
-          {/* Material Grid / List */}
-          {isLoading ? (
-            <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5" : "space-y-3"}>
-              <CardGridSkeleton count={6} />
-            </div>
-          ) : filteredMaterials.length > 0 ? (
-            <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5" : "space-y-3"}>
-              {filteredMaterials.map((m) => (
-                <MaterialCard key={m.id} material={m} variant={viewMode} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Search}
-              title="Material Tidak Ditemukan"
-              description="Coba ubah filter pencarian atau gunakan AI Smart Search untuk menemukan material yang lebih spesifik."
-              actionButton={
-                <div className="flex gap-3">
-                  <button onClick={clearFilters} className="btn-outline">Hapus Filter</button>
-                  <a href="/search" className="btn-primary">Coba AI Search</a>
-                </div>
-              }
-            />
-          )}
-
-
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 ml-auto">
+            <button id="grid-view-btn" onClick={() => setViewMode("grid")} className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-white shadow-sm text-remat-green" : "text-gray-400 hover:text-gray-600"}`}>
+              <Grid3X3 className="w-4 h-4" />
+            </button>
+            <button id="list-view-btn" onClick={() => setViewMode("list")} className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-white shadow-sm text-remat-green" : "text-gray-400 hover:text-gray-600"}`}>
+              <List className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+
+        {/* Material Grid / List */}
+        {isLoading ? (
+          <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5" : "space-y-3"}>
+            <CardGridSkeleton count={6} />
+          </div>
+        ) : filteredMaterials.length > 0 ? (
+          <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5" : "space-y-3"}>
+            {filteredMaterials.map((m) => (
+              <MaterialCard key={m.id} material={m} variant={viewMode} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Search}
+            title="Material Tidak Ditemukan"
+            description="Coba ubah filter pencarian atau gunakan AI Smart Search untuk menemukan material yang lebih spesifik."
+            actionButton={
+              <div className="flex gap-3">
+                <button onClick={clearFilters} className="btn-outline">Hapus Filter</button>
+                <a href="/search" className="btn-primary">Coba AI Search</a>
+              </div>
+            }
+          />
+        )}
       </div>
     </div>
   );

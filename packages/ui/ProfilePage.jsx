@@ -19,6 +19,7 @@ export function ProfilePage() {
     companyName: "",
     industryType: "",
     companyType: "",
+    province: "",
     address: "",
     city: "",
   });
@@ -80,6 +81,10 @@ export function ProfilePage() {
             "",
           industryType: data.consumerProfile?.industryType || "",
           companyType: data.distributorProfile?.companyType || "",
+          province:
+            data.consumerProfile?.province ||
+            data.distributorProfile?.province ||
+            "",
           address:
             data.consumerProfile?.address ||
             data.distributorProfile?.address ||
@@ -299,50 +304,40 @@ export function ProfilePage() {
           {/* Conditionally render role-specific details */}
           {(role === "CONSUMER" || role === "DISTRIBUTOR") && (
             <div className="border-t border-gray-100 pt-6 mt-6 space-y-6">
-              <h4 className="text-sm font-bold text-gray-800">Detail Perusahaan & Operasional</h4>
+              <h4 className="text-sm font-bold text-gray-800">Detail Alamat & Operasional</h4>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Nama Perusahaan */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Nama Perusahaan / Unit Usaha</label>
-                  <input
-                    type="text"
-                    name="companyName"
-                    value={formData.companyName}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition"
-                  />
-                </div>
-
-                {/* Industry or Company Type */}
-                {role === "CONSUMER" ? (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Tipe Industri / Kegiatan</label>
+                {/* Nama Perusahaan (Only for DISTRIBUTOR) */}
+                {role === "DISTRIBUTOR" && (
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Nama Perusahaan / Unit Usaha</label>
                     <input
                       type="text"
-                      name="industryType"
-                      value={formData.industryType}
+                      name="companyName"
+                      value={formData.companyName}
                       onChange={handleChange}
                       disabled={!isEditing}
-                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Tipe Perusahaan</label>
-                    <input
-                      type="text"
-                      name="companyType"
-                      value={formData.companyType}
-                      onChange={handleChange}
-                      disabled={!isEditing}
+                      required
                       className="w-full px-4 py-2.5 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition"
                     />
                   </div>
                 )}
 
-                {/* City */}
+                {/* Provinsi */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Provinsi</label>
+                  <input
+                    type="text"
+                    name="province"
+                    value={formData.province}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    placeholder="Jawa Tengah"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition"
+                  />
+                </div>
+
+                {/* Kota */}
                 <div>
                   <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Kota</label>
                   <input
@@ -351,6 +346,7 @@ export function ProfilePage() {
                     value={formData.city}
                     onChange={handleChange}
                     disabled={!isEditing}
+                    placeholder="Semarang"
                     className="w-full px-4 py-2.5 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition"
                   />
                 </div>
@@ -388,6 +384,10 @@ export function ProfilePage() {
                       "",
                     industryType: user.consumerProfile?.industryType || "",
                     companyType: user.distributorProfile?.companyType || "",
+                    province:
+                      user.consumerProfile?.province ||
+                      user.distributorProfile?.province ||
+                      "",
                     address:
                       user.consumerProfile?.address ||
                       user.distributorProfile?.address ||
