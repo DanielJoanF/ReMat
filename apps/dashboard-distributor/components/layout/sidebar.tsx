@@ -16,6 +16,7 @@ import {
   X,
   Recycle,
   Plus,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
   { label: 'Pesanan', href: '/orders', icon: ShoppingCart },
   { label: 'Laporan Sirkular', href: '/circular', icon: BarChart3 },
   { label: 'Pengaturan', href: '/alerts', icon: Settings },
+  { label: 'Profil Toko', href: '/profile', icon: User },
 ];
 
 interface SidebarProps {
@@ -51,11 +53,11 @@ function BrandHeader({ collapsed }: { collapsed: boolean }) {
     );
   }
   return (
-    <div className="flex items-center gap-2.5 px-4 py-4">
+    <div className="flex flex-col items-start gap-1.5 px-4 py-4">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
+      <img src="/logo.png" alt="Logo" className="h-12 w-auto" />
       <div>
-        <p className="text-[11px] font-medium text-[#64748B] leading-tight">Distributor Dashboard</p>
+        <p className="text-[11px] font-semibold text-[#475569] leading-tight">Distributor Dashboard</p>
       </div>
     </div>
   );
@@ -74,25 +76,27 @@ export function ProfileCard({ collapsed }: { collapsed: boolean }) {
 
   if (collapsed) {
     return (
-      <div className="flex flex-col items-center gap-2 px-2 pb-4">
-        <Avatar name={name} size="lg" className="ring-2 ring-[#DBEAFE]" />
-      </div>
+      <Link href="/profile" className="flex flex-col items-center gap-2 px-2 pb-4 transition-all" title="Profil Toko">
+        <Avatar name={name} size="lg" className="ring-2 ring-[#DBEAFE] hover:ring-[#1D4ED8]" />
+      </Link>
     );
   }
 
   return (
-    <div className="mx-3 mb-4 flex items-center gap-3 rounded-lg border border-[#E2E8F0] bg-white px-3 py-2.5 shadow-sm">
-      <div className="relative flex-shrink-0">
-        <Avatar name={name} size="md" />
-        <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#065F46] ring-2 ring-white">
-          <span className="h-1.5 w-1.5 rounded-full bg-white" />
-        </span>
+    <Link href="/profile" className="block mx-3 mb-4">
+      <div className="flex items-center gap-3 rounded-lg border border-[#E2E8F0] bg-white px-3 py-2.5 shadow-sm hover:bg-slate-50 transition cursor-pointer">
+        <div className="relative flex-shrink-0">
+          <Avatar name={name} size="md" />
+          <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#065F46] ring-2 ring-white">
+            <span className="h-1.5 w-1.5 rounded-full bg-white" />
+          </span>
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-[13px] font-bold text-[#0F172A]">{name}</p>
+          <p className="truncate text-[11px] text-[#64748B]">{role}</p>
+        </div>
       </div>
-      <div className="min-w-0">
-        <p className="truncate text-[13px] font-bold text-[#0F172A]">{name}</p>
-        <p className="truncate text-[11px] text-[#64748B]">{role}</p>
-      </div>
-    </div>
+    </Link>
   );
 }
 

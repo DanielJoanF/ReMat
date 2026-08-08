@@ -108,13 +108,13 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <Link
-                href="/login"
+              <a
+                href="http://localhost:3003/"
                 id="signin-btn"
                 className="btn-primary text-sm px-4 py-2"
               >
                 Masuk
-              </Link>
+              </a>
             )}
           </div>
         </div>

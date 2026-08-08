@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Enforce that the user is logged in and is a DISTRIBUTOR
     if (!storedId || storedRole !== 'DISTRIBUTOR') {
-      window.location.href = 'http://localhost:3000/login';
+      window.location.href = 'http://localhost:3003/';
       return;
     }
 

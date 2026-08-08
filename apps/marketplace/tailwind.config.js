@@ -3,7 +3,7 @@ module.exports = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "../../packages/ui/*.js",
+    "../../packages/ui/*.{js,jsx}",
     "!./app/**/node_modules/**",
     "!**/node_modules/**",
   ],
