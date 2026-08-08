@@ -17,6 +17,36 @@ export function AuthProvider({ children }) {
   // Load session from sessionStorage on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    
+    // 1. Process URL query parameters for session transfer
+    const sessionId = params.get("session_id");
+    const sessionName = params.get("session_name");
+    const sessionRole = params.get("session_role");
+    const sessionEmail = params.get("session_email");
+
+    if (sessionId && sessionName && sessionRole) {
+      sessionStorage.setItem("remat_user_id", sessionId);
+      sessionStorage.setItem("remat_user_name", sessionName);
+      sessionStorage.setItem("remat_user_role", sessionRole);
+      if (sessionEmail) {
+        sessionStorage.setItem("remat_user_email", sessionEmail);
+      }
+
+      // Clean query params from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+
+      setRoleState(sessionRole);
+      setUser({
+        id: sessionId,
+        name: sessionName,
+        email: sessionEmail || "",
+        role: sessionRole,
+      });
+      setIsLoading(false);
+      return;
+    }
+
     if (params.get("logout") === "true") {
       sessionStorage.removeItem("remat_user_id");
       sessionStorage.removeItem("remat_user_name");
@@ -89,12 +119,12 @@ export function AuthProvider({ children }) {
     return loggedInUser;
   };
 
-  const register = async (name, email, address, phone, password, role) => {
+  const register = async (name, email, address, phone, password, role, province, city, companyName) => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, address, phone, password, role }),
+      body: JSON.stringify({ name, email, address, phone, password, role, province, city, companyName }),
     });
 
     const data = await res.json();

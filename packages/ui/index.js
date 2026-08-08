@@ -29,7 +29,11 @@ function Badge({ children, variant = "info", className = "" }) {
   );
 }
 
+const { ProfilePage } = require("./ProfilePage");
+
 module.exports = {
   Button,
-  Badge
+  Badge,
+  ProfilePage
 };
+

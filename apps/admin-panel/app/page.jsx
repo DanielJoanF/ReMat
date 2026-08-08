@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -68,7 +69,7 @@ export default function AdminDashboardPage() {
     const userRole = sessionStorage.getItem("remat_user_role");
 
     if (!userId || userRole !== "ADMIN") {
-      window.location.href = "http://localhost:3000/login";
+      window.location.href = "http://localhost:3003/";
       return;
     }
 
@@ -205,12 +206,12 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       {/* Top Header Navigation */}
       <header className="bg-slate-900 text-white border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-start gap-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
+          <img src="/logo.png" alt="Logo" className="h-14 w-auto" />
           <div>
-            <h1 className="font-bold text-lg tracking-tight">Admin Moderation Console</h1>
-            <p className="text-xs text-slate-400">Collaborative Industrial Zero-Waste Platform</p>
+            <h1 className="font-bold text-md tracking-tight leading-tight">Admin Moderation Console</h1>
+            <p className="text-[10px] text-slate-400">Collaborative Industrial Zero-Waste Platform</p>
           </div>
         </div>
         <div className="flex items-center gap-4 text-xs">
@@ -220,6 +221,9 @@ export default function AdminDashboardPage() {
           <button onClick={fetchAllData} className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition">
             Refresh Data
           </button>
+          <Link href="/profile" className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition font-medium">
+            Profil
+          </Link>
           <button onClick={() => {
             sessionStorage.clear();
             window.location.href = "http://localhost:3000/?logout=true";
