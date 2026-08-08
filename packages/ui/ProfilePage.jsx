@@ -4,6 +4,15 @@ import React, { useState, useEffect } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
+const REGIONS = {
+  "DKI Jakarta": ["Jakarta Pusat", "Jakarta Selatan", "Jakarta Barat", "Jakarta Utara", "Jakarta Timur"],
+  "Jawa Barat": ["Bandung", "Bogor", "Depok", "Bekasi", "Cirebon", "Sukabumi"],
+  "Jawa Tengah": ["Semarang", "Surakarta", "Magelang", "Salatiga", "Pekalongan", "Tegal"],
+  "Jawa Timur": ["Surabaya", "Malang", "Sidoarjo", "Gresik", "Kediri", "Madiun"],
+  "DI Yogyakarta": ["Yogyakarta", "Sleman", "Bantul", "Kulon Progo", "Gunungkidul"],
+  "Banten": ["Tangerang", "Tangerang Selatan", "Serang", "Cilegon"]
+};
+
 export function ProfilePage() {
   const [user, setUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -326,29 +335,65 @@ export function ProfilePage() {
                 {/* Provinsi */}
                 <div>
                   <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Provinsi</label>
-                  <input
-                    type="text"
-                    name="province"
-                    value={formData.province}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    placeholder="Jawa Tengah"
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition"
-                  />
+                  {isEditing ? (
+                    <select
+                      name="province"
+                      value={formData.province}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const cities = REGIONS[val] || [];
+                        setFormData((prev) => ({
+                          ...prev,
+                          province: val,
+                          city: cities[0] || "",
+                        }));
+                      }}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition bg-white"
+                    >
+                      <option value="" disabled>Pilih Provinsi</option>
+                      {Object.keys(REGIONS).map((prov) => (
+                        <option key={prov} value={prov}>{prov}</option>
+                      ))}
+                      {!Object.keys(REGIONS).includes(formData.province) && formData.province && (
+                        <option value={formData.province}>{formData.province}</option>
+                      )}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={formData.province || "-"}
+                      disabled
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 text-sm"
+                    />
+                  )}
                 </div>
 
                 {/* Kota */}
                 <div>
                   <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Kota</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    placeholder="Semarang"
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition"
-                  />
+                  {isEditing ? (
+                    <select
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition bg-white"
+                    >
+                      <option value="" disabled>Pilih Kota</option>
+                      {(REGIONS[formData.province] || []).map((ct) => (
+                        <option key={ct} value={ct}>{ct}</option>
+                      ))}
+                      {!(REGIONS[formData.province] || []).includes(formData.city) && formData.city && (
+                        <option value={formData.city}>{formData.city}</option>
+                      )}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={formData.city || "-"}
+                      disabled
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 text-sm"
+                    />
+                  )}
                 </div>
               </div>
 
