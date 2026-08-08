@@ -18,7 +18,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface CircularReport {
   id: string; period: string; circularScore: number;
-  wasteDiversionRate: number; carbonSaving: number; economicValue: number; createdAt: string;
+  wasteDiversionRate: number; carbonSaving?: number; carbonSavingKg?: number; economicValue: number; createdAt?: string; generatedAt?: string;
 }
 interface ReportDetail extends CircularReport {
   description?: string; materials?: { name: string; diverted: number; unit: string }[];
@@ -40,10 +40,20 @@ function fmtPeriod(p: string) {
   return `${MONTHS[parseInt(m, 10) - 1] ?? m} ${y}`;
 }
 
+function getReportDate(r: CircularReport): Date {
+  const d = r.generatedAt || r.createdAt;
+  return d ? new Date(d) : new Date(0);
+}
+
 function latestKPIs(r: CircularReport[]) {
-  if (!r.length) return { wdr: 0, cs: 0, score: 0, ev: 0 };
-  const l = r.reduce((a, b) => new Date(a.createdAt) > new Date(b.createdAt) ? a : b);
-  return { wdr: l.wasteDiversionRate, cs: l.carbonSaving, score: l.circularScore, ev: l.economicValue };
+  if (!r?.length) return { wdr: 0, cs: 0, score: 0, ev: 0 };
+  const l = r.reduce((a, b) => getReportDate(a) > getReportDate(b) ? a : b);
+  return {
+    wdr: l.wasteDiversionRate ?? 0,
+    cs: l.carbonSaving ?? l.carbonSavingKg ?? 0,
+    score: l.circularScore ?? 0,
+    ev: l.economicValue ?? 0,
+  };
 }
 
 function KPICard({ icon, label, value, unit, color, loading }: {
@@ -128,10 +138,10 @@ export default function CircularReportPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPICard icon={<Recycle className="w-6 h-6 text-[#1B5E20]" />} label="Waste Diversion Rate" value={`${kpis.wdr.toFixed(1)}%`} unit="" color="#10B981" loading={loading} />
-          <KPICard icon={<Leaf className="w-6 h-6 text-blue-600" />} label="Carbon Saving" value={kpis.cs.toLocaleString('id-ID')} unit="kg CO2" color="#3B82F6" loading={loading} />
-          <KPICard icon={<Award className="w-6 h-6 text-amber-600" />} label="Circular Score" value={String(kpis.score)} unit="/100" color="#F59E0B" loading={loading} />
-          <KPICard icon={<DollarSign className="w-6 h-6 text-purple-600" />} label="Nilai Ekonomi" value={formatCurrency(kpis.ev)} unit="" color="#A855F7" loading={loading} />
+          <KPICard icon={<Recycle className="w-6 h-6 text-[#1B5E20]" />} label="Waste Diversion Rate" value={`${(kpis.wdr ?? 0).toFixed(1)}%`} unit="" color="#10B981" loading={loading} />
+          <KPICard icon={<Leaf className="w-6 h-6 text-blue-600" />} label="Carbon Saving" value={(kpis.cs ?? 0).toLocaleString('id-ID')} unit="kg CO2" color="#3B82F6" loading={loading} />
+          <KPICard icon={<Award className="w-6 h-6 text-amber-600" />} label="Circular Score" value={String(kpis.score ?? 0)} unit="/100" color="#F59E0B" loading={loading} />
+          <KPICard icon={<DollarSign className="w-6 h-6 text-purple-600" />} label="Nilai Ekonomi" value={formatCurrency(kpis.ev ?? 0)} unit="" color="#A855F7" loading={loading} />
         </div>
 
         <Card>
@@ -175,7 +185,7 @@ export default function CircularReportPage() {
                             Skor: <span className="font-semibold text-[#1B5E20]">{r.circularScore}</span>
                           </span>
                           <span className="text-xs text-gray-400">•</span>
-                          <span className="text-xs text-gray-500">{formatDate(r.createdAt)}</span>
+                          <span className="text-xs text-gray-500">{formatDate(r.generatedAt || r.createdAt)}</span>
                         </div>
                       </div>
                     </div>
@@ -260,7 +270,7 @@ function ReportDetailModal({ isOpen, onClose, reportId }: {
             </div>
             <div className="bg-blue-50 rounded-lg p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide">Carbon Saving</p>
-              <p className="text-xl font-bold text-blue-700 mt-1">{detail.carbonSaving} kg CO2</p>
+              <p className="text-xl font-bold text-blue-700 mt-1">{(detail.carbonSaving ?? detail.carbonSavingKg ?? 0).toLocaleString('id-ID')} kg CO2</p>
             </div>
             <div className="bg-amber-50 rounded-lg p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide">Nilai Ekonomi</p>
@@ -290,7 +300,7 @@ function ReportDetailModal({ isOpen, onClose, reportId }: {
               </div>
             </div>
           )}
-          <div className="text-xs text-gray-400 pt-2 border-t border-gray-100">Dibuat: {formatDate(detail.createdAt)}</div>
+          <div className="text-xs text-gray-400 pt-2 border-t border-gray-100">Dibuat: {formatDate(detail.generatedAt || detail.createdAt)}</div>
         </div>
       ) : (
         <p className="text-sm text-gray-500 text-center py-8">Data tidak tersedia.</p>

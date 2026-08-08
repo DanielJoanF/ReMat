@@ -130,5 +130,29 @@ export async function deleteData<T>(endpoint: string): Promise<T> {
   return apiClient<T>(endpoint, { method: 'DELETE' });
 }
 
+/**
+ * Upload a file (multipart/form-data) to an endpoint.
+ * Sets x-user-id / x-user-role from localStorage automatically;
+ * does NOT set Content-Type so the browser adds the multipart boundary.
+ */
+export async function uploadFile<T = unknown>(
+  endpoint: string,
+  file: File,
+  type?: string
+): Promise<T> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (type) formData.append('type', type);
+
+  const headers = getStoredHeaders();
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  return handleResponse<T>(response);
+}
+
 export { RATE_LIMIT_EXCEEDED };
 export type { RequestOptions };
