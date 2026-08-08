@@ -182,19 +182,22 @@ function MaterialsPageInner() {
   const handleRefresh = () => { setRefreshKey((k) => k + 1); setPage(1); };
 
   const handleDelete = async () => {
-    if (!deleteModal.material) return;
-    setDeleting(true);
-    try {
-      await deleteData(`/materials/${deleteModal.material.id}`);
-      toastRef.current({ type: 'success', message: 'Material berhasil dihapus.' });
-      setDeleteModal({ open: false, material: null });
-      handleRefresh();
-    } catch (error: unknown) {
-      handleApiError(error, toastRef.current, 'Gagal menghapus material');
-    } finally {
-      setDeleting(false);
-    }
-  };
+      if (!deleteModal.material) return;
+      const idToDelete = deleteModal.material.id;
+      setDeleting(true);
+      try {
+        await deleteData(`/materials/${idToDelete}`);
+        toastRef.current({ type: 'success', message: 'Material berhasil dihapus.' });
+        // Remove the deleted row locally so it disappears without a full refetch.
+        setMaterials((prev) => prev.filter((m) => m.id !== idToDelete));
+        setDeleteModal({ open: false, material: null });
+        handleRefresh();
+      } catch (error: unknown) {
+        handleApiError(error, toastRef.current, 'Gagal menghapus material');
+      } finally {
+        setDeleting(false);
+      }
+    };
 
   const handleSubmitMaterial = async (material: Material) => {
     try {
@@ -432,15 +435,13 @@ function MaterialsPageInner() {
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
-                            {['DRAFT', 'REJECTED'].includes(item.status) && (
-                              <button
-                                onClick={() => setDeleteModal({ open: true, material: item })}
-                                className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
-                                title="Hapus"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => setDeleteModal({ open: true, material: item })}
+                              className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
+                              title="Hapus"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                             {item.status === 'DRAFT' && (
                               <button
                                 onClick={() => handleSubmitMaterial(item)}
