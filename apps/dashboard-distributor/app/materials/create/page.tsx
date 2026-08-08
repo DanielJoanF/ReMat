@@ -1,1 +1,167 @@
-1|'use client';\n2|\n3|export const dynamic = 'force-dynamic';\n4|\n5|import { useState, useEffect } from 'react';\n6|import { useRouter } from 'next/navigation';\n7|import { useForm } from 'react-hook-form';\n8|import { zodResolver } from '@hookform/resolvers/zod';\n9|import { z } from 'zod';\n10|import { Save, ArrowLeft } from 'lucide-react';\n11|import { DashboardLayout } from '@/components/layout/dashboard-layout';\n12|import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';\n13|import { Button } from '@/components/ui/button';\n14|import { Input } from '@/components/ui/input';\n15|import { Select } from '@/components/ui/select';\n16|import { useToast } from '@/components/ui/toast';\n17|import { useAuth } from '@/contexts/auth-context';\n18|import { getData, postData, uploadFile } from '@/lib/api-client';\n19|import { PhotoPicker } from '@/components/materials/photo-picker';\n20|\n21|const materialSchema = z.object({\n22|  nama: z.string().min(1, 'Nama material wajib diisi'),\n23|  deskripsi: z.string().min(1, 'Deskripsi wajib diisi'),\n24|  kategori: z.string().min(1, 'Kategori wajib dipilih'),\n25|  grade: z.string().min(1, 'Grade wajib dipilih'),\n26|  harga: z.coerce.number().positive('Harga harus lebih dari 0'),\n27|  unit: z.string().min(1, 'Unit wajib dipilih'),\n28|  stok: z.coerce.number().nonnegative('Stok tidak boleh negatif'),\n29|  lokasi: z.string().min(1, 'Lokasi wajib diisi'),\n30|});\n31|\n32|type MaterialFormData = z.infer<typeof materialSchema>;\n33|\n34|interface Category { id: string; name: string; label?: string; }\n35|\n36|const gradeOptions = [\n37|  { value: 'A', label: 'Grade A (Premium)' },\n38|  { value: 'B', label: 'Grade B (Standar)' },\n39|  { value: 'C', label: 'Grade C (Kurang)' },\n40|  { value: 'D', label: 'Grade D (Terendah)' },\n41|];\n42|\n43|const unitOptions = [\n44|  { value: 'KG', label: 'Kilogram (KG)' },\n45|  { value: 'TON', label: 'Ton' },\n46|  { value: 'LITER', label: 'Liter' },\n47|];\n48|\n49|\nexport default function CreateMaterialPage() {\n50|  const router = useRouter();\n51|  const { toast } = useToast();\n52|  const { isReady } = useAuth();\n53|  const [submitting, setSubmitting] = useState(false);\n54|  const [categories, setCategories] = useState<Category[]>([]);\n55|  const [photos, setPhotos] = useState<File[]>([]);\n56|\n57|  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<MaterialFormData>({\n58|    resolver: zodResolver(materialSchema),\n59|  });\n60|\n61|  useEffect(() => {\n62|    // Wait until AuthProvider has written the user identity to localStorage.\n63|    if (!isReady) return;\n64|    const fetchCategories = async () => {\n65|      try {\n66|        const response = await getData<{ data: Category[] }>('/categories');\n67|        setCategories(response.data || []);\n68|      } catch {\n69|        toast({ type: 'error', message: 'Gagal memuat kategori' });\n70|      }\n71|    };\n72|    fetchCategories();\n73|  }, [isReady]); // eslint-disable-line react-hooks/exhaustive-deps\n74|\n75|  const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name || c.label || '' }));\n76|\n77|  const onSubmit = async (data: MaterialFormData) => {\n77|    try {\n78|      setSubmitting(true);\n79|      await postData<{ data: { id: string } }>('/materials', {\n80|        title: data.nama, description: data.deskripsi, categoryId: data.kategori,\n81|        qualityGrade: data.grade, price: data.harga, unit: data.unit,\n82|        quantity: data.stok, location: data.lokasi,\n83|        status: 'DRAFT',\n84|      });\n85|      const materialId = created.data?.id;\n86|\n87|      // Upload foto yang dipilih setelah material tersimpan (draf).\n87|      // Gagal upload hanya menampilkan toast — tidak mengubah data material.\n88|      if (materialId) {\n89|        for (const file of photos) {\n90|          try {\n91|            await uploadFile(`/materials/${materialId}/documents', file, 'PHOTO');\n92|          } catch {\n93|            toast({ type: 'error', message: `Foto \"${file.name}\" gagal diupload.` });\n94|          }\n95|        }\n96|      }\n97|      toast({ type: 'success', message: 'Material berhasil disimpan sebagai draf' });\n98|      router.push('/materials');\n99|    } catch (err) {\n100|      toast({ type: 'error', message: err instanceof Error ? err.message : 'Gagal menyimpan material' });\n101|    } finally {\n102|      setSubmitting(false);\n103|    }\n104|  };\n105|\n106|  return (\n107|    <DashboardLayout>\n108|      <div className=\"mx-auto max-w-3xl space-y-6\">\n109|        <div className=\"flex items-center gap-4\">\n110|          <Button variant=\"secondary\" onClick={() => router.back()}>\n111|            <ArrowLeft className=\"h-4 w-4\" />\n112|          </Button>\n113|          <div>\n114|            <h2 className=\"text-2xl font-bold text-gray-900\">Tambah Material</h2>\n115|            <p className=\"text-sm text-gray-500\">Isi informasi material baru</p>\n116|          </div>\n117|\n118|          <form onSubmit={handleSubmit(onSubmit)} className=\"space-y-6\">\n120|            <Card>\n121|              <CardHeader><CardTitle>Informasi Dasar</CardTitle></CardHeader>\n122|              <CardContent className=\"space-y-4\">\n123|                <Input label=\"Nama Material\" required placeholder=\"Contoh: Botol PET Bening\" error={errors.nama?.message} {...register('nama')} />\n131|                <div className=\"space-y-1\">\n132|                  <label className=\"block text-sm font-medium text-gray-700\">Deskripsi <span className=\"text-red-500\">*</span></label>\n133|                  <textarea placeholder=\"Deskripsikan material secara detail...\" rows={4}\n134|                    className={\`block w-full rounded-md border px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:border-[#1B5E20] focus:ring-1 focus:ring-[#1B5E20] \${errors.deskripsi ? 'border-red-500' : 'border-gray-300'}\`}\n135|                    {...register('deskripsi')}\n136|                {errors.deskripsi && <p className=\"text-xs text-red-500\">{errors.deskripsi.message}</p>}\n137|              </div>\n138|                <Select label=\"Kategori\" required options={categoryOptions} placeholder=\"Pilih kategori\" error={errors.kategori?.message} value={watch('kategori')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('kategori', e.target.value)} />\n139|                <Select label=\"Grade\" required options={gradeOptions} placeholder=\"Pilih grade\" error={errors.grade?.message} value={watch('grade')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('grade', e.target.value)} />\n140|              </CardContent>\n141|              </Card>\n142|\n143|              <Card>\n144|                <CardHeader><CardTitle>Harga & Stok</CardTitle></CardHeader>\n145|                <CardContent>\n146|                  <div className=\"grid grid-cols-1 gap-4 sm:grid-cols-2\">\n147|                    <Input label=\"Harga\" required type=\"number\" placeholder=\"0\" error={errors.harga?.message} {...register('harga')} />\n150|                    <Select label=\"Unit\" required options={unitOptions} placeholder=\"Pilih unit\" error={errors.unit?.message} value={watch('unit')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('unit', e.target.value)} />\n151|                    <Input label=\"Stok\" required type=\"number\" placeholder=\"0\" error={errors.stok?.message} {...register('stok')} />\n152|                    <Input label=\"Lokasi\" required placeholder=\"Contoh: Jakarta Selatan\" error={errors.lokasi?.message} {...register('lokasi')} />\n153|                  </div>\n155|                </CardContent>\n156|              </Card>\n157|\n156|              <Card>\n157|                <CardHeader><CardTitle>Foto Material</CardTitle></CardHeader>\n158|                <CardContent>\n159|                  <p className=\"mb-4 text-sm text-gray-500\">Upload foto produk (opsional). Foto diunggah setelah material tersimpan.</p>\n160|                  <PhotoPicker files={photos} onChange={setPhotos} />\n161|                </CardContent>\n162|              </Card>\n163|\n165|                <div className=\"flex items-center justify-end gap-3\">\n166|                  <Button variant=\"secondary\" type=\"button\" onClick={() => router.push('/materials')}>Batal</Button>\n167|                  <Button variant=\"primary\" type=\"submit\" loading={submitting}><Save className=\"h-4 w-4\" /> Simpan Draf</Button>\n169|                </div>\n170|              </form>\n171|            </DashboardLayout>\n171|      </div>\n172|    </DashboardLayout>\n172|  );\n173|}"
+'use client';
+
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Save, ArrowLeft } from 'lucide-react';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/contexts/auth-context';
+import { getData, postData, uploadFile } from '@/lib/api-client';
+import { PhotoPicker } from '@/components/materials/photo-picker';
+
+const materialSchema = z.object({
+  nama: z.string().min(1, 'Nama material wajib diisi'),
+  deskripsi: z.string().min(1, 'Deskripsi wajib diisi'),
+  kategori: z.string().min(1, 'Kategori wajib dipilih'),
+  grade: z.string().min(1, 'Grade wajib dipilih'),
+  harga: z.coerce.number().positive('Harga harus lebih dari 0'),
+  unit: z.string().min(1, 'Unit wajib dipilih'),
+  stok: z.coerce.number().nonnegative('Stok tidak boleh negatif'),
+  lokasi: z.string().min(1, 'Lokasi wajib diisi'),
+});
+
+type MaterialFormData = z.infer<typeof materialSchema>;
+
+interface Category { id: string; name: string; label?: string; }
+
+const gradeOptions = [
+  { value: 'A', label: 'Grade A (Premium)' },
+  { value: 'B', label: 'Grade B (Standar)' },
+  { value: 'C', label: 'Grade C (Kurang)' },
+  { value: 'D', label: 'Grade D (Terendah)' },
+];
+
+const unitOptions = [
+  { value: 'KG', label: 'Kilogram (KG)' },
+  { value: 'TON', label: 'Ton' },
+  { value: 'LITER', label: 'Liter' },
+];
+
+export default function CreateMaterialPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const { isReady } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [photos, setPhotos] = useState<File[]>([]);
+
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<MaterialFormData>({
+    resolver: zodResolver(materialSchema),
+  });
+
+  useEffect(() => {
+    // Wait until AuthProvider has written the user identity to localStorage.
+    if (!isReady) return;
+    const fetchCategories = async () => {
+      try {
+        const response = await getData<{ data: Category[] }>('/categories');
+        setCategories(response.data || []);
+      } catch {
+        toast({ type: 'error', message: 'Gagal memuat kategori' });
+      }
+    };
+    fetchCategories();
+  }, [isReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name || c.label || '' }));
+
+  const onSubmit = async (data: MaterialFormData) => {
+    try {
+      setSubmitting(true);
+      const created = await postData<{ data: { id: string } }>('/materials', {
+        title: data.nama, description: data.deskripsi, categoryId: data.kategori,
+        qualityGrade: data.grade, price: data.harga, unit: data.unit,
+        quantity: data.stok, location: data.lokasi,
+        status: 'DRAFT',
+      });
+      const materialId = created.data?.id;
+
+      // Upload foto yang dipilih setelah material tersimpan (draf).
+      // Gagal upload hanya menampilkan toast — tidak mengubah data material.
+      if (materialId) {
+        for (const file of photos) {
+          try {
+            await uploadFile(`/materials/${materialId}/documents`, file, 'PHOTO');
+          } catch {
+            toast({ type: 'error', message: `Foto "${file.name}" gagal diupload.` });
+          }
+        }
+      }
+
+      toast({ type: 'success', message: 'Material berhasil disimpan sebagai draf' });
+      router.push('/materials');
+    } catch (err) {
+      toast({ type: 'error', message: err instanceof Error ? err.message : 'Gagal menyimpan material' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="secondary" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Tambah Material</h2>
+            <p className="text-sm text-gray-500">Isi informasi material baru</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <Card>
+            <CardHeader><CardTitle>Informasi Dasar</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <Input label="Nama Material" required placeholder="Contoh: Botol PET Bening" error={errors.nama?.message} {...register('nama')} />
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">Deskripsi <span className="text-red-500">*</span></label>
+                <textarea placeholder="Deskripsikan material secara detail..." rows={4}
+                  className={`block w-full rounded-md border px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:border-[#1B5E20] focus:outline-none focus:ring-1 focus:ring-[#1B5E20] ${errors.deskripsi ? 'border-red-500' : 'border-gray-300'}`}
+                  {...register('deskripsi')} />
+                {errors.deskripsi && <p className="text-xs text-red-500">{errors.deskripsi.message}</p>}
+              </div>
+              <Select label="Kategori" required options={categoryOptions} placeholder="Pilih kategori" error={errors.kategori?.message} value={watch('kategori')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('kategori', e.target.value, { shouldValidate: true })} />
+              <Select label="Grade" required options={gradeOptions} placeholder="Pilih grade" error={errors.grade?.message} value={watch('grade')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('grade', e.target.value, { shouldValidate: true })} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle>Harga & Stok</CardTitle></CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input label="Harga" required type="number" placeholder="0" error={errors.harga?.message} {...register('harga')} />
+                <Select label="Unit" required options={unitOptions} placeholder="Pilih unit" error={errors.unit?.message} value={watch('unit')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('unit', e.target.value, { shouldValidate: true })} />
+                <Input label="Stok" required type="number" placeholder="0" error={errors.stok?.message} {...register('stok')} />
+                <Input label="Lokasi" required placeholder="Contoh: Jakarta Selatan" error={errors.lokasi?.message} {...register('lokasi')} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle>Foto Material</CardTitle></CardHeader>
+            <CardContent>
+              <p className="mb-4 text-sm text-gray-500">Upload foto produk (opsional). Foto diunggah setelah material tersimpan.</p>
+              <PhotoPicker files={photos} onChange={setPhotos} />
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-end gap-3">
+            <Button variant="secondary" type="button" onClick={() => router.push('/materials')}>Batal</Button>
+            <Button variant="primary" type="submit" loading={submitting}><Save className="h-4 w-4" /> Simpan Draf</Button>
+          </div>
+        </form>
+      </div>
+    </DashboardLayout>
+  );
+}

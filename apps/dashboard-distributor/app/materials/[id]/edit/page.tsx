@@ -7,13 +7,12 @@ import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Save, ArrowLeft, Camera } from 'lucide-react';
+import { Save, ArrowLeft } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/contexts/auth-context';
 import { getData, putData } from '@/lib/api-client';
@@ -76,7 +75,7 @@ export default function EditMaterialPage() {
   });
 
   useEffect(() => {
-    // Wait until AuthProvider has written the user identity to localStorage,
+    // Wait until AuthProvider has written the user identity to sessionStorage,
     // so the API request carries the correct x-user-id / x-user-role headers.
     if (!isReady) return;
     const fetchData = async () => {
@@ -86,9 +85,9 @@ export default function EditMaterialPage() {
           getData<{ data: Category[] }>('/categories'),
         ]);
         const mat = matRes.data;
-                setMaterial(mat);
-                setPhotos((mat.documents || []).filter((d) => d.type === 'PHOTO'));
-                setCategories(catRes.data || []);
+        setMaterial(mat);
+        setPhotos((mat.documents || []).filter((d) => d.type === 'PHOTO'));
+        setCategories(catRes.data || []);
         reset({
           nama: mat.title, deskripsi: mat.description, kategori: mat.categoryId,
           grade: mat.qualityGrade ?? '', harga: mat.price, unit: mat.unit, stok: mat.quantity, lokasi: mat.location,
@@ -100,18 +99,17 @@ export default function EditMaterialPage() {
       }
     };
     fetchData();
-      }, [id, reset, toast, isReady]);
+  }, [id, reset, toast, isReady]);
 
   const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name }));
-  const isEditable = material?.status === 'DRAFT' || material?.status === 'REJECTED';
 
   const onSubmit = async (data: MaterialFormData) => {
     try {
       setSubmitting(true);
       await putData(`/materials/${id}`, {
-              title: data.nama, description: data.deskripsi, categoryId: data.kategori,
-              qualityGrade: data.grade, price: data.harga, unit: data.unit, quantity: data.stok, location: data.lokasi,
-            });
+        title: data.nama, description: data.deskripsi, categoryId: data.kategori,
+        qualityGrade: data.grade, price: data.harga, unit: data.unit, quantity: data.stok, location: data.lokasi,
+      });
       toast({ type: 'success', message: 'Material berhasil diperbarui' });
       router.push('/materials');
     } catch (err) {
@@ -140,28 +138,6 @@ export default function EditMaterialPage() {
     );
   }
 
-  if (!isEditable) {
-    return (
-      <DashboardLayout>
-        <div className="mx-auto max-w-3xl space-y-6">
-          <div className="flex items-center gap-4">
-            <Button variant="secondary" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /></Button>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Edit Material</h2>
-              <p className="text-sm text-gray-500">Status material saat ini: <StatusBadge status={material.status as any} /></p>
-            </div>
-          </div>
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-gray-600">Material dengan status <strong>{material.status}</strong> tidak dapat diedit.</p>
-              <p className="text-sm text-gray-400 mt-1">Hanya material dengan status DRAFT atau REJECTED yang dapat diedit.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout>
       <div className="mx-auto max-w-3xl space-y-6">
@@ -174,16 +150,16 @@ export default function EditMaterialPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                  <Card>
-                    <CardHeader><CardTitle>Foto Material</CardTitle></CardHeader>
-                    <CardContent>
-                      <p className="mb-4 text-sm text-gray-500">Kelola foto produk material ini.</p>
-                      <ImageUploader materialId={id} photos={photos} onChange={setPhotos} />
-                    </CardContent>
-                  </Card>
+          <Card>
+            <CardHeader><CardTitle>Foto Material</CardTitle></CardHeader>
+            <CardContent>
+              <p className="mb-4 text-sm text-gray-500">Kelola foto produk material ini.</p>
+              <ImageUploader materialId={id} photos={photos} onChange={setPhotos} />
+            </CardContent>
+          </Card>
 
-                  <Card>
-                    <CardHeader><CardTitle>Informasi Dasar</CardTitle></CardHeader>
+          <Card>
+            <CardHeader><CardTitle>Informasi Dasar</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <Input label="Nama Material" required placeholder="Contoh: Botol PET Bening" error={errors.nama?.message} {...register('nama')} />
               <div className="space-y-1">
@@ -193,8 +169,8 @@ export default function EditMaterialPage() {
                   {...register('deskripsi')} />
                 {errors.deskripsi && <p className="text-xs text-red-500">{errors.deskripsi.message}</p>}
               </div>
-              <Select label="Kategori" required options={categoryOptions} placeholder="Pilih kategori" error={errors.kategori?.message} value={watch('kategori')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('kategori', e.target.value)} />
-              <Select label="Grade" required options={gradeOptions} placeholder="Pilih grade" error={errors.grade?.message} value={watch('grade')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('grade', e.target.value)} />
+              <Select label="Kategori" required options={categoryOptions} placeholder="Pilih kategori" error={errors.kategori?.message} value={watch('kategori')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('kategori', e.target.value, { shouldValidate: true })} />
+              <Select label="Grade" required options={gradeOptions} placeholder="Pilih grade" error={errors.grade?.message} value={watch('grade')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('grade', e.target.value, { shouldValidate: true })} />
             </CardContent>
           </Card>
 
@@ -203,7 +179,7 @@ export default function EditMaterialPage() {
             <CardContent>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Input label="Harga" required type="number" placeholder="0" error={errors.harga?.message} {...register('harga')} />
-                <Select label="Unit" required options={unitOptions} placeholder="Pilih unit" error={errors.unit?.message} value={watch('unit')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('unit', e.target.value)} />
+                <Select label="Unit" required options={unitOptions} placeholder="Pilih unit" error={errors.unit?.message} value={watch('unit')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('unit', e.target.value, { shouldValidate: true })} />
                 <Input label="Stok" required type="number" placeholder="0" error={errors.stok?.message} {...register('stok')} />
                 <Input label="Lokasi" required placeholder="Contoh: Jakarta Selatan" error={errors.lokasi?.message} {...register('lokasi')} />
               </div>

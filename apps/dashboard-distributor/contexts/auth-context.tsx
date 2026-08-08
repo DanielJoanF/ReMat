@@ -29,6 +29,10 @@ const STORAGE_KEY_USER_ID = 'x-user-id';
 const STORAGE_KEY_USER_ROLE = 'x-user-role';
 const STORAGE_KEY_USER_NAME = 'x-user-name';
 
+// URL halaman login. Di production pakai env; dev default login app (3003).
+const LOGIN_URL =
+  process.env.NEXT_PUBLIC_LOGIN_URL || 'http://localhost:3003/';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -57,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Enforce that the user is logged in and is a DISTRIBUTOR
     if (!storedId || storedRole !== 'DISTRIBUTOR') {
-      window.location.href = 'http://localhost:3003/';
+      window.location.href = LOGIN_URL;
       return;
     }
 
@@ -81,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem(STORAGE_KEY_USER_ROLE);
     sessionStorage.removeItem(STORAGE_KEY_USER_NAME);
     setUser(null);
-    window.location.href = 'http://localhost:3000/?logout=true';
+    window.location.href = `${LOGIN_URL}?logout=true`;
   }, []);
 
   const switchRole = useCallback(

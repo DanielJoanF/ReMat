@@ -147,24 +147,24 @@ function OrdersPageInner() {
       if (activeTab !== 'SEMUA') params.status = activeTab;
 
       const result = await getData<OrdersResponse>('/transactions/orders', params);
-            setOrders(result.data ?? EMPTY_ORDERS);
-            setTotalItems(result.pagination?.total ?? 0);
-            setTotalPages(result.pagination?.totalPages ?? 1);
-          } catch (error: unknown) {
-            setOrders(EMPTY_ORDERS);
-            setTotalItems(0);
-            setTotalPages(1);
-            toastRef.current({
-              type: 'error',
-              message: error instanceof Error ? error.message : 'Gagal memuat pesanan',
-            });
+      setOrders(result.data ?? EMPTY_ORDERS);
+      setTotalItems(result.pagination?.total ?? 0);
+      setTotalPages(result.pagination?.totalPages ?? 1);
+    } catch (error: unknown) {
+      setOrders(EMPTY_ORDERS);
+      setTotalItems(0);
+      setTotalPages(1);
+      toastRef.current({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Gagal memuat pesanan',
+      });
     } finally {
       setLoading(false);
     }
   }, [page, searchQuery, activeTab, refreshKey]);
 
   useEffect(() => {
-    // Wait until AuthProvider has written the user identity to localStorage,
+    // Wait until AuthProvider has written the user identity to sessionStorage,
     // so the API request carries the correct x-user-id / x-user-role headers.
     if (!isReady) return;
     fetchOrders();
@@ -177,11 +177,15 @@ function OrdersPageInner() {
   }, [searchParams, searchQuery]);
 
   const handleRefresh = () => { setRefreshKey((k) => k + 1); setPage(1); };
+
   const handleAction = async () => {
     if (!actionModal.order) return;
     setActionLoading(true);
     try {
-      const endpoint = actionModal.type === 'CONFIRM' ? `/transactions/${actionModal.order.id}/confirm` : `/transactions/${actionModal.order.id}/ship`;
+      // Order IDs from the API may be prefixed with '#' (e.g. '#ORD-abc'); strip it
+      // so the URL path resolves to /transactions/:id/confirm|ship.
+      const orderId = encodeURIComponent(actionModal.order.id.replace(/^#/, ''));
+      const endpoint = actionModal.type === 'CONFIRM' ? `/transactions/${orderId}/confirm` : `/transactions/${orderId}/ship`;
       await patchData(endpoint);
       toastRef.current({ type: 'success', message: `Pesanan berhasil ${actionModal.type === 'CONFIRM' ? 'dikonfirmasi' : 'diupdate'}.` });
       setActionModal({ open: false, type: 'CONFIRM', order: null });
@@ -195,8 +199,8 @@ function OrdersPageInner() {
 
   const filteredOrders = orders.filter((order) => {
     if (activeTab !== 'SEMUA') {
-       if (activeTab === 'PAID' && order.status !== 'PAID' && order.status !== 'CONFIRMED') return false; 
-       if (activeTab !== 'PAID' && order.status !== activeTab) return false;
+      if (activeTab === 'PAID' && order.status !== 'PAID' && order.status !== 'CONFIRMED') return false;
+      if (activeTab !== 'PAID' && order.status !== activeTab) return false;
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -265,7 +269,7 @@ function OrdersPageInner() {
               <p className="text-[24px] font-extrabold text-[#0B1C30] tabular-nums">{completedOrders}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-gray-600" />
+              <CheckCircle2 className="w-6 h-6 text-gray-600" />
             </div>
           </div>
         </div>
@@ -343,7 +347,7 @@ function OrdersPageInner() {
                     const qty = order.items?.[0]?.quantity || 0;
                     const unit = order.items?.[0]?.unit || 'kg';
                     const displayQty = qty >= 1000 && unit === 'kg' ? `${(qty/1000).toFixed(1).replace('.0', '')} Ton` : `${qty} ${unit === 'kg' ? 'Kg' : unit}`;
-                    
+
                     return (
                       <tr key={order.id} className="hover:bg-gray-50/70 transition-colors">
                         <td className="py-3 px-4 font-bold text-[#0B1C30] tabular-nums">
@@ -378,7 +382,7 @@ function OrdersPageInner() {
                                 Terima
                               </button>
                             )}
-                            {(order.status === 'CONFIRMED' || order.status === 'PAID') && (
+                            {order.status === 'PAID' && (
                               <button
                                 onClick={() => setActionModal({ open: true, type: 'SHIP', order })}
                                 className="px-2.5 py-1.5 rounded border border-primary text-primary text-[11px] font-semibold hover:bg-gray-50 transition-colors"
@@ -430,8 +434,8 @@ function OrdersPageInner() {
         >
           <div className="space-y-4">
             <p className="text-[13px] text-gray-600">
-              {actionModal.type === 'CONFIRM' 
-                ? `Apakah Anda yakin ingin menerima pesanan ${actionModal.order?.id}?` 
+              {actionModal.type === 'CONFIRM'
+                ? `Apakah Anda yakin ingin menerima pesanan ${actionModal.order?.id}?`
                 : `Lanjutkan untuk memproses pengiriman pesanan ${actionModal.order?.id}?`
               }
             </p>

@@ -290,12 +290,8 @@ const createMaterial = async (userId, data) => {
 const updateMaterial = async (materialId, userId, data) => {
   const material = await verifyOwnership(materialId, userId);
 
-  // Only allow editing in DRAFT or REJECTED status
-  if (!["DRAFT", "REJECTED"].includes(material.status)) {
-    const err = new Error(`Cannot edit material in "${material.status}" status. Only DRAFT or REJECTED materials can be edited.`);
-    err.statusCode = 400;
-    throw err;
-  }
+  // Editing is allowed in every status now (guard removed above).
+  // If material was REJECTED, reset to DRAFT on edit (below).
 
   const updateData = {};
   if (data.title !== undefined) updateData.title = data.title;
@@ -324,6 +320,10 @@ const updateMaterial = async (materialId, userId, data) => {
     updateData.status = "DRAFT";
   }
 
+  // Editing is allowed in every status now (guard removed above).
+  // For non-DRAFT/REJECTED statuses we keep the status unchanged
+  // so an ACTIVE/PENDING_REVIEW listing is not silently demoted.
+
   const updated = await prisma.material.update({
     where: { id: materialId },
     data: updateData,
@@ -342,7 +342,7 @@ const updateMaterial = async (materialId, userId, data) => {
 };
 
 /**
- * Delete a material (owner only, only DRAFT/REJECTED).
+ * Delete a material (owner only; any status, guarded by active transactions).
  */
 const deleteMaterial = async (materialId, userId) => {
   const material = await verifyOwnership(materialId, userId);
