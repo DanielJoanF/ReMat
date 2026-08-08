@@ -347,13 +347,35 @@ const updateMaterial = async (materialId, userId, data) => {
 const deleteMaterial = async (materialId, userId) => {
   const material = await verifyOwnership(materialId, userId);
 
-  if (!["DRAFT", "REJECTED"].includes(material.status)) {
-    const err = new Error(`Cannot delete material in "${material.status}" status. Only DRAFT or REJECTED materials can be deleted.`);
+  // Deleting a material that is part of an active (non-cancelled) transaction would
+  // leave a transaction pointing at a deleted product. Guard against that, and allow
+  // deletion in every other case (all statuses).
+  const activeItems = await prisma.transactionItem.findFirst({
+    where: {
+      materialId,
+      transaction: { status: { notIn: ["CANCELLED"] } }
+    },
+    select: { id: true }
+  });
+
+  if (activeItems) {
+    const err = new Error(
+      "Material tidak dapat dihapus karena masih terhubung ke transaksi yang sedang berjalan."
+    );
     err.statusCode = 400;
     throw err;
   }
 
-  return prisma.material.delete({ where: { id: materialId } });
+  // Delete embedding + material atomically. documents cascade automatically.
+  await prisma.$transaction([
+    prisma.$executeRawUnsafe(
+      `DELETE FROM material_embeddings WHERE material_id = $1`,
+      materialId
+    ),
+    prisma.material.delete({ where: { id: materialId } })
+  ]);
+
+  return { id: materialId };
 };
 
 /**
