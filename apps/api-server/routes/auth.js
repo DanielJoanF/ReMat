@@ -39,8 +39,6 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: { message: "Email sudah terdaftar" } });
     }
 
-    // Determine the role
-    const uppercaseRole = role.toUpperCase();
     if (!["CONSUMER", "DISTRIBUTOR", "ADMIN"].includes(uppercaseRole)) {
       return res.status(400).json({ error: { message: "Role tidak valid" } });
     }

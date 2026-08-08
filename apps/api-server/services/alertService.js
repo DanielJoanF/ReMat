@@ -6,22 +6,7 @@
  * no results above the similarity threshold (ARCHITECTURE.md §5, Scenario #2).
  */
 const { prisma } = require("@remat/database");
-
-/**
- * Get consumer profile ID from user ID.
- */
-const getConsumerProfileId = async (userId) => {
-  const profile = await prisma.consumerProfile.findUnique({
-    where: { userId },
-    select: { id: true }
-  });
-  if (!profile) {
-    const err = new Error("Consumer profile not found");
-    err.statusCode = 404;
-    throw err;
-  }
-  return profile.id;
-};
+const { getConsumerProfileId } = require("../utils/profile");
 
 /**
  * Create a material alert.

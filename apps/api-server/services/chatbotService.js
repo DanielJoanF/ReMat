@@ -11,22 +11,7 @@
 const { prisma } = require("@remat/database");
 const { buildChatbotPrompt, generateText, isLlmAvailable } = require("@remat/ai-core");
 const searchService = require("./searchService");
-
-/**
- * Get consumer profile ID from user ID.
- */
-const getConsumerProfileId = async (userId) => {
-  const profile = await prisma.consumerProfile.findUnique({
-    where: { userId },
-    select: { id: true }
-  });
-  if (!profile) {
-    const err = new Error("Consumer profile not found");
-    err.statusCode = 404;
-    throw err;
-  }
-  return profile.id;
-};
+const { getConsumerProfileId } = require("../utils/profile");
 
 /**
  * Start a new chat conversation session.
