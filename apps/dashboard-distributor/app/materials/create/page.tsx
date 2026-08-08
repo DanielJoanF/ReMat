@@ -59,7 +59,7 @@ export default function CreateMaterialPage() {
   });
 
   useEffect(() => {
-    // Wait until AuthProvider has written the user identity to localStorage.
+    // Wait until AuthProvider has written the user identity to sessionStorage.
     if (!isReady) return;
     const fetchCategories = async () => {
       try {
