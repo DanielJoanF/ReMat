@@ -114,7 +114,7 @@ export default function CircularReportPage() {
     if (!selMonth) { toastRef.current({ type: 'error', message: 'Pilih bulan terlebih dahulu.' }); return; }
     setGenerating(true);
     try {
-      await postData('/circular-reports/generate', { period: `${selYear}-${selMonth}` });
+      await postData('/circular-reports/my/generate', { period: `${selYear}-${selMonth}` });
       toastRef.current({ type: 'success', message: `Laporan untuk ${fmtPeriod(`${selYear}-${selMonth}`)} berhasil dibuat.` });
       setGenOpen(false); setSelMonth(''); fetchReports();
     } catch (e: unknown) { handleApiError(e, toastRef.current, 'Gagal membuat laporan'); }

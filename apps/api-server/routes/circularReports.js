@@ -12,6 +12,14 @@ router.post(
   circularReportController.generateReport
 );
 
+// Distributor: generate a report for their OWN profile (tenant-scoped)
+router.post(
+  "/my/generate",
+  requireAuth,
+  requireRole("DISTRIBUTOR"),
+  circularReportController.generateMyReport
+);
+
 // Distributor: list my historical circular reports
 router.get(
   "/my",

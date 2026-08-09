@@ -782,19 +782,82 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
     });
 
     it("Distributor 2 cannot access Distributor 1's circular report (403)", async () => {
-      mockDb.circularReport.findUnique.mockResolvedValue({
-        id: "rep-1",
-        period: "2026-08",
-        distributorId: "dist-prof-1",
-        distributor: { id: "dist-prof-1", userId: "dist-user-1" }
-      });
+          mockDb.circularReport.findUnique.mockResolvedValue({
+            id: "rep-1",
+            period: "2026-08",
+            distributorId: "dist-prof-1",
+            distributor: { id: "dist-prof-1", userId: "dist-user-1" }
+          });
 
-      const res = await request(app)
-        .get("/circular-reports/rep-1")
-        .set(dist2Headers);
+          const res = await request(app)
+            .get("/circular-reports/rep-1")
+            .set(dist2Headers);
 
-      expect(res.status).toBe(403);
-    });
+          expect(res.status).toBe(403);
+        });
+
+        it("Distributor generates a circular report for their own profile", async () => {
+          mockDb.distributorProfile.findUnique.mockResolvedValue({ id: "dist-prof-1" });
+          mockDb.transaction.findMany.mockResolvedValue([
+            {
+              id: "tx-1",
+              totalAmount: 23000000,
+              items: [
+                {
+                  materialId: "mat-100",
+                  quantity: 2,
+                  material: { id: "mat-100", unit: "TON" }
+                }
+              ]
+            }
+          ]);
+          mockDb.material.findMany.mockResolvedValue([
+            { quantity: 1, unit: "TON" } // 1000 kg unutilized inventory
+          ]);
+          mockDb.circularReport.upsert.mockImplementation(({ create }) => Promise.resolve({ id: "report-2026-08", ...create }));
+
+          const res = await request(app)
+            .post("/circular-reports/my/generate")
+            .set(dist1Headers)
+            .send({ period: "2026-08" });
+
+          expect(res.status).toBe(201);
+          const data = res.body.data;
+          expect(data.period).toBe("2026-08");
+          expect(data.totalWasteUtilizedKg).toBe(2000);
+          expect(data.carbonSavingKg).toBe(3600);
+          expect(data.wasteDiversionRate).toBe(66.67);
+
+          // Resolved via the authenticated user's OWN distributor profile
+                    const userIdCalls = mockDb.distributorProfile.findUnique.mock.calls
+                      .filter((c) => c[0]?.where?.userId);
+                    expect(userIdCalls.length).toBeGreaterThanOrEqual(1);
+                    expect(userIdCalls[userIdCalls.length - 1][0].where.userId).toBe("dist-user-1");
+        });
+
+        it("Distributor cannot generate a circular report without a period (400)", async () => {
+          const res = await request(app)
+            .post("/circular-reports/my/generate")
+            .set(dist1Headers)
+            .send({});
+
+          expect(res.status).toBe(400);
+        });
+
+        it("Consumer cannot generate a circular report (403)", async () => {
+          mockDb.distributorProfile.findUnique.mockResolvedValue({ id: "dist-prof-1" });
+          mockDb.transaction.findMany.mockResolvedValue([]);
+          mockDb.material.findMany.mockResolvedValue([]);
+          mockDb.circularReport.upsert.mockImplementation(({ create }) => Promise.resolve({ id: "report-2026-08", ...create }));
+
+          const res = await request(app)
+            .post("/circular-reports/my/generate")
+            .set(cons1Headers)
+            .send({ period: "2026-08" });
+
+          expect(res.status).toBe(403);
+          expect(mockDb.circularReport.upsert).not.toHaveBeenCalled();
+        });
   });
 
   describe("Phase 8: AI Assistant / Chatbot (RAG Augmentation)", () => {

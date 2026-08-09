@@ -198,6 +198,29 @@ const generateReportForDistributor = async (distributorId, period) => {
 };
 
 /**
+ * Generate a circular report for the authenticated distributor's OWN profile.
+ * Resolves the distributor profile via the logged-in user id (tenant-scoped).
+ *
+ * @param {string} userId - Authenticated user id
+ * @param {string} period - Period string format "YYYY-MM" (e.g. "2026-08")
+ * @returns {Promise<object>} Saved CircularReport record
+ */
+const generateReportForCurrentUser = async (userId, period) => {
+  const distributor = await prisma.distributorProfile.findUnique({
+    where: { userId },
+    select: { id: true }
+  });
+
+  if (!distributor) {
+    const err = new Error("Distributor profile not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return generateReportForDistributor(distributor.id, period);
+};
+
+/**
  * Generate circular reports for ALL verified distributors for a period.
  * Useful for admin trigger or cron job.
  */
@@ -270,6 +293,7 @@ const getReportById = async (reportId, user) => {
 
 module.exports = {
   generateReportForDistributor,
+  generateReportForCurrentUser,
   generateAllReportsForPeriod,
   listDistributorReports,
   getReportById,
