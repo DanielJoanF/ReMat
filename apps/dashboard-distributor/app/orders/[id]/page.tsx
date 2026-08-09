@@ -106,15 +106,18 @@ export default function OrderDetailPage() {
   const [trackingError, setTrackingError] = useState('');
 
   const fetchOrder = useCallback(async () => {
-    if (!orderId) return;
-    setLoading(true); setError(null);
-    try { setOrder(await getData<OrderDetail>(`/transactions/${orderId}`)); }
-    catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Gagal memuat detail pesanan';
-      if (msg === RATE_LIMIT_EXCEEDED) toast({ type: 'warning', message: 'Terlalu banyak permintaan.' });
-      else { setError(msg); toast({ type: 'error', message: msg }); }
-    } finally { setLoading(false); }
-  }, [orderId, toast]);
+      if (!orderId) return;
+      setLoading(true); setError(null);
+      try {
+        const res = await getData<{ data: OrderDetail }>(`/transactions/${orderId}`);
+        setOrder(res.data);
+      }
+      catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Gagal memuat detail pesanan';
+        if (msg === RATE_LIMIT_EXCEEDED) toast({ type: 'warning', message: 'Terlalu banyak permintaan.' });
+        else { setError(msg); toast({ type: 'error', message: msg }); }
+      } finally { setLoading(false); }
+    }, [orderId, toast]);
 
   useEffect(() => {
     // Wait until AuthProvider has written the user identity to localStorage,
@@ -176,8 +179,8 @@ export default function OrderDetailPage() {
     </DashboardLayout>
   );
 
-  const cfg = STATUS_CFG[order.status];
-  const subtotal = order.items.reduce((s, i) => s + i.totalPrice, 0);
+  const cfg = STATUS_CFG[order.status ?? ''];
+    const subtotal = order?.items?.reduce((s, i) => s + i.totalPrice, 0) ?? 0;
 
   const Actions = () => {
     switch (order.status) {
