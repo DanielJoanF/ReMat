@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import AdminShell from "./components/AdminShell";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -16,39 +16,23 @@ const getAdminHeaders = () => {
   };
 };
 
-const ADMIN_HEADERS = new Proxy({}, {
-  get(target, prop) {
-    return getAdminHeaders()[prop];
-  },
-  ownKeys(target) {
-    return Reflect.ownKeys(getAdminHeaders());
-  },
-  getOwnPropertyDescriptor(target, prop) {
-    return Reflect.getOwnPropertyDescriptor(getAdminHeaders(), prop);
-  }
-});
+const STATUS_LABELS = {
+  PENDING: { label: "Menunggu", color: "bg-yellow-100 text-yellow-800" },
+  CONFIRMED: { label: "Dikonfirmasi", color: "bg-blue-100 text-blue-800" },
+  PAID: { label: "Dibayar", color: "bg-indigo-100 text-indigo-800" },
+  SHIPPED: { label: "Dikirim", color: "bg-purple-100 text-purple-800" },
+  COMPLETED: { label: "Selesai", color: "bg-emerald-100 text-emerald-800" },
+  CANCELLED: { label: "Dibatalkan", color: "bg-red-100 text-red-800" }
+};
 
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState("moderation");
   const [metrics, setMetrics] = useState(null);
   const [pendingMaterials, setPendingMaterials] = useState([]);
-  const [distributors, setDistributors] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [banners, setBanners] = useState([]);
-  const [aiLogs, setAiLogs] = useState(null);
-
-  // Form states
-  const [categoryName, setCategoryName] = useState("");
-  const [categorySlug, setCategorySlug] = useState("");
-  const [bannerTitle, setBannerTitle] = useState("");
-  const [bannerUrl, setBannerUrl] = useState("");
-  const [bannerLink, setBannerLink] = useState("");
-
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState("");
 
   useEffect(() => {
-    // 1. Process URL query parameters for session transfer
+    // Process URL query parameters for session transfer
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session_id");
     const sessionName = params.get("session_name");
@@ -58,13 +42,10 @@ export default function AdminDashboardPage() {
       sessionStorage.setItem("remat_user_id", sessionId);
       sessionStorage.setItem("remat_user_name", sessionName);
       sessionStorage.setItem("remat_user_role", sessionRole);
-
-      // Clean query params from URL
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
     }
 
-    // 2. Read session from sessionStorage and guard access
     const userId = sessionStorage.getItem("remat_user_id");
     const userRole = sessionStorage.getItem("remat_user_role");
 
@@ -84,21 +65,13 @@ export default function AdminDashboardPage() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [metricsRes, pendingRes, distRes, catRes, bannerRes, aiLogsRes] = await Promise.all([
-        fetch(`${API_BASE}/analytics/dashboard`, { headers: ADMIN_HEADERS }).then((r) => r.json()),
-        fetch(`${API_BASE}/admin/materials/pending`, { headers: ADMIN_HEADERS }).then((r) => r.json()),
-        fetch(`${API_BASE}/admin/distributors`, { headers: ADMIN_HEADERS }).then((r) => r.json()),
-        fetch(`${API_BASE}/categories`).then((r) => r.json()),
-        fetch(`${API_BASE}/admin/banners`, { headers: ADMIN_HEADERS }).then((r) => r.json()),
-        fetch(`${API_BASE}/admin/ai-monitoring`, { headers: ADMIN_HEADERS }).then((r) => r.json())
+      const [dashboardRes, pendingRes] = await Promise.all([
+        fetch(`${API_BASE}/analytics/dashboard`, { headers: getAdminHeaders() }).then((r) => r.json()),
+        fetch(`${API_BASE}/admin/materials/pending`, { headers: getAdminHeaders() }).then((r) => r.json())
       ]);
 
-      if (metricsRes?.data?.metrics) setMetrics(metricsRes.data.metrics);
+      if (dashboardRes?.data?.metrics) setMetrics(dashboardRes.data.metrics);
       if (pendingRes?.data) setPendingMaterials(pendingRes.data);
-      if (distRes?.data) setDistributors(distRes.data);
-      if (catRes?.data) setCategories(catRes.data);
-      if (bannerRes?.data) setBanners(bannerRes.data);
-      if (aiLogsRes?.data) setAiLogs(aiLogsRes.data);
     } catch (err) {
       console.error("Error fetching admin dashboard data:", err);
     } finally {
@@ -106,473 +79,179 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // 1. Material Moderation Handlers
-  const handleReviewMaterial = async (materialId, action) => {
-    try {
-      const res = await fetch(`${API_BASE}/admin/materials/${materialId}/review`, {
-        method: "PATCH",
-        headers: ADMIN_HEADERS,
-        body: JSON.stringify({ action })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast(`Material ${action === "approve" ? "disetujui (ACTIVE)" : "ditolak (REJECTED)"}`);
-        fetchAllData();
-      } else {
-        alert(data.error?.message || "Gagal memproses");
-      }
-    } catch (err) {
-      alert("Error processing review");
+  const kpiCards = [
+    {
+      label: "Total Omset Platform",
+      value: `Rp ${(metrics?.summary?.totalRevenue ?? 0).toLocaleString("id-ID")}`,
+      sub: "Status COMPLETED & PAID",
+      color: "text-emerald-700",
+      bg: "bg-emerald-50",
+      icon: (
+        <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    },
+    {
+      label: "Total Transaksi",
+      value: (metrics?.summary?.totalTransactions ?? 0).toLocaleString("id-ID"),
+      sub: "Semua status transaksi",
+      color: "text-blue-700",
+      bg: "bg-blue-50",
+      icon: (
+        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 022 2h2a2 2 0 022-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      )
+    },
+    {
+      label: "Material Aktif",
+      value: (metrics?.summary?.activeMaterials ?? 0).toLocaleString("id-ID"),
+      sub: "Material terverifikasi & tayang",
+      color: "text-slate-800",
+      bg: "bg-slate-50",
+      icon: (
+        <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      )
+    },
+    {
+      label: "Total Distributor",
+      value: (metrics?.summary?.totalDistributors ?? 0).toLocaleString("id-ID"),
+      sub: "Produsen limbah terdaftar",
+      color: "text-violet-700",
+      bg: "bg-violet-50",
+      icon: (
+        <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      )
+    },
+    {
+      label: "Total Konsumen",
+      value: (metrics?.summary?.totalConsumers ?? 0).toLocaleString("id-ID"),
+      sub: "Pembeli material terdaftar",
+      color: "text-amber-700",
+      bg: "bg-amber-50",
+      icon: (
+        <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      )
     }
-  };
-
-  // 2. Distributor Verification Handler
-  const handleVerifyDistributor = async (distributorId, currentStatus) => {
-    try {
-      const res = await fetch(`${API_BASE}/admin/distributors/${distributorId}/verify`, {
-        method: "PATCH",
-        headers: ADMIN_HEADERS,
-        body: JSON.stringify({ isVerified: !currentStatus })
-      });
-      if (res.ok) {
-        showToast(`Status verifikasi distributor diperbarui`);
-        fetchAllData();
-      }
-    } catch (err) {
-      alert("Error verifying distributor");
-    }
-  };
-
-  // 3. Category Handlers
-  const handleCreateCategory = async (e) => {
-    e.preventDefault();
-    if (!categoryName || !categorySlug) return;
-    try {
-      const res = await fetch(`${API_BASE}/categories`, {
-        method: "POST",
-        headers: ADMIN_HEADERS,
-        body: JSON.stringify({ name: categoryName, slug: categorySlug })
-      });
-      if (res.ok) {
-        showToast("Kategori baru berhasil dibuat");
-        setCategoryName("");
-        setCategorySlug("");
-        fetchAllData();
-      }
-    } catch (err) {
-      alert("Error creating category");
-    }
-  };
-
-  // 4. Banner Handlers
-  const handleCreateBanner = async (e) => {
-    e.preventDefault();
-    if (!bannerTitle || !bannerUrl) return;
-    try {
-      const res = await fetch(`${API_BASE}/admin/banners`, {
-        method: "POST",
-        headers: ADMIN_HEADERS,
-        body: JSON.stringify({ title: bannerTitle, imageUrl: bannerUrl, linkUrl: bannerLink })
-      });
-      if (res.ok) {
-        showToast("Banner promo berhasil dibuat");
-        setBannerTitle("");
-        setBannerUrl("");
-        setBannerLink("");
-        fetchAllData();
-      }
-    } catch (err) {
-      alert("Error creating banner");
-    }
-  };
-
-  const handleDeleteBanner = async (bannerId) => {
-    if (!confirm("Hapus banner ini?")) return;
-    try {
-      const res = await fetch(`${API_BASE}/admin/banners/${bannerId}`, {
-        method: "DELETE",
-        headers: ADMIN_HEADERS
-      });
-      if (res.ok) {
-        showToast("Banner dihapus");
-        fetchAllData();
-      }
-    } catch (err) {
-      alert("Error deleting banner");
-    }
-  };
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-      {/* Top Header Navigation */}
-      <header className="bg-slate-900 text-white border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-md">
-        <div className="flex flex-col items-start gap-1">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Logo" className="h-14 w-auto" />
-          <div>
-            <h1 className="font-bold text-md tracking-tight leading-tight">Admin Moderation Console</h1>
-            <p className="text-[10px] text-slate-400">Collaborative Industrial Zero-Waste Platform</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4 text-xs">
-          <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 px-3 py-1 rounded-full font-medium">
-            Admin: {typeof window !== "undefined" ? sessionStorage.getItem("remat_user_name") || "Administrator" : "Administrator"}
-          </span>
-          <button onClick={fetchAllData} className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition">
-            Refresh Data
-          </button>
-          <Link href="/profile" className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition font-medium">
-            Profil
-          </Link>
-          <button onClick={() => {
-            sessionStorage.clear();
-            window.location.href = "http://localhost:3000/?logout=true";
-          }} className="bg-red-900 hover:bg-red-800 text-red-200 px-3 py-1.5 rounded transition font-semibold">
-            Keluar
-          </button>
-        </div>
-      </header>
-
+    <AdminShell onRefresh={fetchAllData}>
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-700 text-white px-5 py-3 rounded-lg shadow-lg text-sm font-medium animate-bounce">
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-700 text-white px-5 py-3 rounded-lg shadow-lg text-sm font-medium">
           ✓ {notification}
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Metric Cards Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Omset Platform</p>
-            <p className="text-2xl font-bold text-slate-900 mt-2">
-              Rp {metrics?.summary?.totalRevenue?.toLocaleString("id-ID") || 0}
-            </p>
-            <p className="text-xs text-slate-400 mt-1">Status COMPLETED & PAID</p>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Material PENDING REVIEW</p>
-            <p className="text-2xl font-bold text-amber-600 mt-2">{pendingMaterials.length}</p>
-            <p className="text-xs text-amber-700 font-medium mt-1">Membutuhkan moderasi admin</p>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Distributor Terdaftar</p>
-            <p className="text-2xl font-bold text-slate-900 mt-2">{distributors.length}</p>
-            <p className="text-xs text-slate-400 mt-1">
-              {distributors.filter((d) => d.isVerified).length} Terverifikasi
-            </p>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Listing Aktif Marketplace</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-2">{metrics?.summary?.activeMaterials || 0}</p>
-            <p className="text-xs text-slate-400 mt-1">Material terverifikasi & tayang</p>
-          </div>
+      <div className="px-6 py-8 max-w-7xl mx-auto">
+        {/* Page Title */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard Admin</h1>
+          <p className="text-sm text-slate-500 mt-1">Ringkasan metrik platform ReMat secara keseluruhan</p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="border-b border-slate-200 mb-6 flex gap-2">
-          {[
-            { id: "moderation", label: `Moderasi Material (${pendingMaterials.length})` },
-            { id: "distributors", label: `Verifikasi Distributor (${distributors.length})` },
-            { id: "categories", label: `Kategori Limbah (${categories.length})` },
-            { id: "banners", label: `Banner Promosi (${banners.length})` },
-            { id: "ai-monitoring", label: "Monitoring Kualitas AI" }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 text-sm font-semibold border-b-2 transition ${
-                activeTab === tab.id
-                  ? "border-emerald-600 text-emerald-800 bg-white rounded-t-lg"
-                  : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* TAB 1: MODERASI MATERIAL */}
-        {activeTab === "moderation" && (
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">
-              Antrean Moderasi Limbah (PENDING_REVIEW)
-            </h2>
-            {pendingMaterials.length === 0 ? (
-              <div className="py-12 text-center text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                ✓ Tidak ada material yang membutuhkan verifikasi saat ini.
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {pendingMaterials.map((mat) => (
-                  <div key={mat.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-base">{mat.title}</span>
-                        <span className="text-xs bg-slate-100 font-mono text-slate-600 px-2 py-0.5 rounded">
-                          {mat.materialCode}
-                        </span>
-                        <span className="text-xs bg-amber-100 text-amber-800 font-medium px-2 py-0.5 rounded">
-                          {mat.category?.name || "Kategori"}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 mt-1 max-w-2xl">{mat.description}</p>
-                      <div className="text-xs text-slate-500 mt-2 flex gap-4">
-                        <span>Stok: <strong>{mat.quantity} {mat.unit}</strong></span>
-                        <span>Harga: <strong>Rp {Number(mat.price).toLocaleString("id-ID")}/{mat.unit}</strong></span>
-                        <span>Lokasi: <strong>{mat.location}</strong></span>
-                        <span>Distributor: <strong>{mat.distributor?.companyName || "N/A"}</strong></span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleReviewMaterial(mat.id, "approve")}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition"
-                      >
-                        ✓ Setujui (ACTIVE)
-                      </button>
-                      <button
-                        onClick={() => handleReviewMaterial(mat.id, "reject")}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition"
-                      >
-                        ✕ Tolak (REJECT)
-                      </button>
-                    </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-24 text-slate-400">
+            <svg className="animate-spin w-6 h-6 mr-3" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Memuat data dashboard...
+          </div>
+        ) : (
+          <>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+              {kpiCards.map((card) => (
+                <div key={card.label} className={`${card.bg} rounded-xl border border-slate-200 p-4 shadow-sm`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider leading-tight">{card.label}</p>
+                    {card.icon}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 2: VERIFIKASI DISTRIBUTOR */}
-        {activeTab === "distributors" && (
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">
-              Daftar Produsen Limbah (Distributor)
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-700 uppercase font-semibold border-b">
-                  <tr>
-                    <th className="p-3">Nama Perusahaan</th>
-                    <th className="p-3">Email User</th>
-                    <th className="p-3">Kota</th>
-                    <th className="p-3">Material Listed</th>
-                    <th className="p-3">Status Verifikasi</th>
-                    <th className="p-3 text-right">Aksi Admin</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {distributors.map((d) => (
-                    <tr key={d.id} className="hover:bg-slate-50">
-                      <td className="p-3 font-bold text-slate-900">{d.companyName}</td>
-                      <td className="p-3 text-slate-600">{d.user?.email || "N/A"}</td>
-                      <td className="p-3 text-slate-600">{d.city}</td>
-                      <td className="p-3 font-semibold">{d._count?.materials || 0}</td>
-                      <td className="p-3">
-                        {d.isVerified ? (
-                          <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-semibold">
-                            ✓ TERVERIFIKASI
-                          </span>
-                        ) : (
-                          <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded">
-                            BELUM VERIFIKASI
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-right">
-                        <button
-                          onClick={() => handleVerifyDistributor(d.id, d.isVerified)}
-                          className={`px-3 py-1.5 rounded font-semibold text-xs transition ${
-                            d.isVerified
-                              ? "bg-slate-200 hover:bg-slate-300 text-slate-700"
-                              : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                          }`}
-                        >
-                          {d.isVerified ? "Batalkan Verifikasi" : "Verifikasi Sekarang"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: MANAJEMEN KATEGORI */}
-        {activeTab === "categories" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-900 mb-3">Tambah Kategori Baru</h3>
-              <form onSubmit={handleCreateCategory} className="space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Nama Kategori</label>
-                  <input
-                    type="text"
-                    value={categoryName}
-                    onChange={(e) => {
-                      setCategoryName(e.target.value);
-                      setCategorySlug(e.target.value.toLowerCase().replace(/\s+/g, "-"));
-                    }}
-                    placeholder="Misal: Limbah Kaca"
-                    className="w-full border border-slate-300 rounded px-3 py-2 text-xs focus:ring-1 focus:ring-emerald-600"
-                  />
+                  <p className={`text-xl font-bold ${card.color} mt-1`}>{card.value}</p>
+                  <p className="text-xs text-slate-400 mt-1">{card.sub}</p>
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Slug URL</label>
-                  <input
-                    type="text"
-                    value={categorySlug}
-                    onChange={(e) => setCategorySlug(e.target.value)}
-                    placeholder="limbah-kaca"
-                    className="w-full border border-slate-300 rounded px-3 py-2 text-xs font-mono"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded text-xs font-semibold"
-                >
-                  + Simpan Kategori
-                </button>
-              </form>
+              ))}
             </div>
 
-            <div className="md:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-900 mb-3">Daftar Kategori Terdaftar</h3>
-              <div className="divide-y divide-slate-100">
-                {categories.map((cat) => (
-                  <div key={cat.id} className="py-2.5 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="font-bold text-slate-900">{cat.name}</span>
-                      <span className="ml-2 font-mono text-slate-400">({cat.slug})</span>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Material Pending Review Card */}
+              <div className="bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-amber-100 flex items-center justify-between">
+                  <div>
+                    <h2 className="font-bold text-slate-900 text-sm">Material PENDING REVIEW</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">Menunggu verifikasi admin</p>
                   </div>
-                ))}
+                  <span className="bg-amber-100 text-amber-800 font-bold text-lg px-3 py-1 rounded-lg">
+                    {pendingMaterials.length}
+                  </span>
+                </div>
+                <div className="divide-y divide-slate-50 max-h-48 overflow-y-auto">
+                  {pendingMaterials.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400 text-sm">
+                      ✓ Tidak ada material menunggu verifikasi
+                    </div>
+                  ) : (
+                    pendingMaterials.slice(0, 5).map((mat) => (
+                      <div key={mat.id} className="px-5 py-3">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{mat.title}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{mat.distributor?.companyName || "N/A"} · {mat.location}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+                {pendingMaterials.length > 0 && (
+                  <div className="px-5 py-3 border-t border-slate-100">
+                    <a href="/verifikasi-penjualan" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+                      Lihat semua → Verifikasi Penjualan
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* Transaction Breakdown */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100">
+                  <h2 className="font-bold text-slate-900 text-sm">Breakdown Status Transaksi</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Distribusi status seluruh transaksi</p>
+                </div>
+                <div className="px-5 py-4 space-y-2">
+                  {Object.entries(metrics?.transactionBreakdown || {}).map(([status, count]) => {
+                    const meta = STATUS_LABELS[status] || { label: status, color: "bg-slate-100 text-slate-700" };
+                    const total = Object.values(metrics?.transactionBreakdown || {}).reduce((a, b) => a + b, 0);
+                    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                    return (
+                      <div key={status} className="flex items-center gap-3">
+                        <span className={`${meta.color} text-[11px] font-semibold px-2 py-0.5 rounded w-28 text-center flex-shrink-0`}>
+                          {meta.label}
+                        </span>
+                        <div className="flex-1 bg-slate-100 rounded-full h-1.5">
+                          <div
+                            className="bg-emerald-500 h-1.5 rounded-full transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-bold text-slate-700 w-8 text-right">{count}</span>
+                      </div>
+                    );
+                  })}
+                  {(!metrics?.transactionBreakdown || Object.keys(metrics.transactionBreakdown).length === 0) && (
+                    <p className="text-xs text-slate-400 py-4 text-center">Belum ada data transaksi</p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* TAB 4: BANNER PROMOSI */}
-        {activeTab === "banners" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-900 mb-3">Buat Banner Promosi</h3>
-              <form onSubmit={handleCreateBanner} className="space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Judul Banner</label>
-                  <input
-                    type="text"
-                    value={bannerTitle}
-                    onChange={(e) => setBannerTitle(e.target.value)}
-                    placeholder="Promo Daur Ulang Plastik"
-                    className="w-full border border-slate-300 rounded px-3 py-2 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Image URL</label>
-                  <input
-                    type="text"
-                    value={bannerUrl}
-                    onChange={(e) => setBannerUrl(e.target.value)}
-                    placeholder="https://example.com/banner.jpg"
-                    className="w-full border border-slate-300 rounded px-3 py-2 text-xs font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Link URL (Opsional)</label>
-                  <input
-                    type="text"
-                    value={bannerLink}
-                    onChange={(e) => setBannerLink(e.target.value)}
-                    placeholder="https://remat.id/promo"
-                    className="w-full border border-slate-300 rounded px-3 py-2 text-xs font-mono"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded text-xs font-semibold"
-                >
-                  + Simpan Banner
-                </button>
-              </form>
-            </div>
-
-            <div className="md:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-900 mb-3">Daftar Banner Tayang</h3>
-              {banners.length === 0 ? (
-                <p className="text-xs text-slate-500 py-4">Belum ada banner promosi terpasang.</p>
-              ) : (
-                <div className="space-y-3">
-                  {banners.map((b) => (
-                    <div key={b.id} className="p-3 border rounded-lg flex items-center justify-between text-xs">
-                      <div>
-                        <p className="font-bold text-slate-900">{b.title}</p>
-                        <p className="text-slate-400 font-mono text-[11px] truncate max-w-xs">{b.imageUrl}</p>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteBanner(b.id)}
-                        className="text-red-600 hover:text-red-800 font-semibold text-xs"
-                      >
-                        Hapus
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: MONITORING KUALITAS AI */}
-        {activeTab === "ai-monitoring" && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-              <h2 className="text-base font-bold text-slate-900 mb-3">
-                Log Pencarian Gagal / Di Bawah Threshold (Material Alerts)
-              </h2>
-              <p className="text-xs text-slate-500 mb-4">
-                Daftar query konsumen yang tidak menemukan hasil similarity &ge; 0.6 untuk evaluasi kualitas AI secara manual (PRD.md §5.3 no.1).
-              </p>
-              {aiLogs?.failedSearchAlerts?.length === 0 ? (
-                <p className="text-xs text-slate-400 py-4">Tidak ada log pencarian gagal tercatat saat ini.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-700 font-semibold border-b">
-                      <tr>
-                        <th className="p-2.5">Konsumen</th>
-                        <th className="p-2.5">Query Teks Konsumen</th>
-                        <th className="p-2.5">Filter Lokasi</th>
-                        <th className="p-2.5">Tanggal</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {aiLogs?.failedSearchAlerts?.map((a) => (
-                        <tr key={a.id}>
-                          <td className="p-2.5 font-semibold text-slate-900">
-                            {a.consumer?.companyName || a.consumer?.user?.email}
-                          </td>
-                          <td className="p-2.5 font-mono text-emerald-800">{a.queryText}</td>
-                          <td className="p-2.5 text-slate-600">{a.locationFilter || "Semua Lokasi"}</td>
-                          <td className="p-2.5 text-slate-400">
-                            {new Date(a.createdAt).toLocaleString("id-ID")}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
+          </>
         )}
       </div>
-    </div>
+    </AdminShell>
   );
 }

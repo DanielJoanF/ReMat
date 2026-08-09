@@ -46,80 +46,9 @@ const deleteMaterial = async (req, res, next) => {
   }
 };
 
-const listDistributors = async (req, res, next) => {
-  try {
-    const distributors = await adminService.listDistributorsAdmin();
-    res.json({ data: distributors });
-  } catch (err) {
-    next(err);
-  }
-};
-
-const verifyDistributor = async (req, res, next) => {
-  try {
-    const { isVerified } = req.body;
-    const distributor = await adminService.verifyDistributor(req.params.id, isVerified);
-    res.json({ data: distributor, message: `Distributor verification status set to ${isVerified}` });
-  } catch (err) {
-    next(err);
-  }
-};
-
-const listBanners = async (req, res, next) => {
-  try {
-    const banners = await adminService.listBannersAdmin();
-    res.json({ data: banners });
-  } catch (err) {
-    next(err);
-  }
-};
-
-const createBanner = async (req, res, next) => {
-  try {
-    const banner = await adminService.createBanner(req.user.id, req.body);
-    res.status(201).json({ data: banner, message: "Banner created successfully" });
-  } catch (err) {
-    next(err);
-  }
-};
-
-const updateBanner = async (req, res, next) => {
-  try {
-    const banner = await adminService.updateBanner(req.params.id, req.body);
-    res.json({ data: banner, message: "Banner updated successfully" });
-  } catch (err) {
-    next(err);
-  }
-};
-
-const deleteBanner = async (req, res, next) => {
-  try {
-    const result = await adminService.deleteBanner(req.params.id);
-    res.json({ data: result, message: "Banner deleted successfully" });
-  } catch (err) {
-    next(err);
-  }
-};
-
-const getAiMonitoringLogs = async (req, res, next) => {
-  try {
-    const logs = await adminService.getAiMonitoringLogs();
-    res.json({ data: logs });
-  } catch (err) {
-    next(err);
-  }
-};
-
 module.exports = {
   listPendingMaterials,
   reviewMaterial,
   suspendMaterial,
-  deleteMaterial,
-  listDistributors,
-  verifyDistributor,
-  listBanners,
-  createBanner,
-  updateBanner,
-  deleteBanner,
-  getAiMonitoringLogs
+  deleteMaterial
 };

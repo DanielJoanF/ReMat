@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "ReMat Admin Panel — Dashboard Moderasi & Analitik",
-  description: "Panel Kontrol Admin ReMat",
+  description: "Panel Kontrol Admin ReMat — Verifikasi Penjualan, Laporan Ekonomi Sirkular",
 };
 
 export default function RootLayout({ children }) {

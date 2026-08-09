@@ -81,13 +81,6 @@ const { mockDb, mockGenerateEmbedding, mockIsAvailable } = vi.hoisted(() => {
       findMany: vi.fn(),
       findUnique: vi.fn()
     },
-    banner: {
-      create: vi.fn(),
-      findMany: vi.fn(),
-      findUnique: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn()
-    },
     $transaction: vi.fn((promises) => Promise.all(promises)),
     $queryRawUnsafe: vi.fn(),
     $executeRawUnsafe: vi.fn()
@@ -193,38 +186,12 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
     });
     mockDb.$queryRawUnsafe.mockReset();
     mockDb.material.findMany.mockReset();
+    // Default empty arrays to prevent undefined errors in fallback search paths
+    mockDb.material.findMany.mockResolvedValue([]);
+    mockDb.material.count.mockResolvedValue(0);
   });
 
-  describe("Phase 1: Category Management (Admin)", () => {
-    it("Admin can create category", async () => {
-      mockDb.category.findUnique.mockResolvedValue(null);
-      mockDb.category.create.mockResolvedValue({
-        id: "cat-1",
-        name: "Plastik PET",
-        slug: "plastik-pet",
-        parentId: null
-      });
-
-      const res = await request(app)
-        .post("/categories")
-        .set(adminHeaders)
-        .send({ name: "Plastik PET", slug: "plastik-pet" });
-
-      expect(res.status).toBe(201);
-      expect(res.body.data.name).toBe("Plastik PET");
-    });
-
-    it("Non-admin cannot create category (403)", async () => {
-      const res = await request(app)
-        .post("/categories")
-        .set(dist1Headers)
-        .send({ name: "Plastik PET", slug: "plastik-pet" });
-
-      expect(res.status).toBe(403);
-    });
-  });
-
-  describe("Phase 2: Distributor Uploads Material & Workflow", () => {
+  describe("Phase 1: Distributor Uploads Material & Workflow", () => {
     it("Distributor creates material -> status = DRAFT", async () => {
       mockDb.distributorProfile.findUnique.mockResolvedValue({ id: "dist-prof-1" });
       mockDb.category.findUnique.mockResolvedValue({ id: "cat-1", name: "Plastik PET" });
@@ -302,7 +269,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
     });
   });
 
-  describe("Phase 3: Public Listing & Filtering", () => {
+  describe("Phase 2: Public Listing & Filtering", () => {
     it("Consumer lists ACTIVE materials with filters", async () => {
       mockDb.material.findMany.mockResolvedValue([
         {
@@ -326,7 +293,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
     });
   });
 
-  describe("Phase 4: Order Transaction Lifecycle", () => {
+  describe("Phase 3: Order Transaction Lifecycle", () => {
     it("Consumer creates order -> status = PENDING", async () => {
       mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-1" });
       mockDb.material.findMany.mockResolvedValue([
@@ -481,7 +448,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
     });
   });
 
-  describe("Phase 5: Cross-Tenant & Role Security Controls", () => {
+  describe("Phase 4: Cross-Tenant & Role Security Controls", () => {
     it("Distributor 2 cannot edit Distributor 1's material (403)", async () => {
       mockDb.material.findUnique.mockResolvedValue({
         id: "mat-100",
@@ -558,7 +525,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
     });
   });
 
-  describe("Phase 6: AI Smart Search & Alerts", () => {
+  describe("Phase 5: AI Smart Search & Alerts", () => {
     it("Search requires query parameter", async () => {
       const res = await request(app)
         .get("/search");
@@ -685,7 +652,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
     });
   });
 
-  describe("Phase 7: Analytics Engine & Dashboard Insights", () => {
+  describe("Phase 6: Analytics Engine & Dashboard Insights", () => {
     it("Distributor fetches tenant-isolated dashboard insight with LLM narration", async () => {
       mockDb.distributorProfile.findUnique.mockResolvedValue({
         id: "dist-prof-1",
@@ -748,7 +715,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
     });
   });
 
-  describe("Phase 8: Circular Economy Report Engine", () => {
+  describe("Phase 7: Circular Economy Report Engine", () => {
     it("Admin triggers manual circular report generation with verified mathematical formulas", async () => {
       mockDb.distributorProfile.findUnique.mockResolvedValue({
         id: "dist-prof-1",
@@ -830,7 +797,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
     });
   });
 
-  describe("Phase 9: AI Assistant / Chatbot (RAG Augmentation)", () => {
+  describe("Phase 8: AI Assistant / Chatbot (RAG Augmentation)", () => {
     it("Consumer starts a chat conversation session", async () => {
       mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-1" });
       mockDb.chatConversation.create.mockResolvedValue({
@@ -943,7 +910,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
     });
   });
 
-  describe("Phase 10: Admin Panel & Moderation Tools", () => {
+  describe("Phase 9: Admin Panel & Moderation Tools", () => {
     it("Admin suspends an active material -> status = REJECTED", async () => {
       mockDb.material.findUnique.mockResolvedValue({
         id: "mat-100",
@@ -965,77 +932,17 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       expect(res.body.data.status).toBe("REJECTED");
     });
 
-    it("Admin verifies distributor profile -> isVerified = true", async () => {
-      mockDb.distributorProfile.findUnique.mockResolvedValue({
-        id: "dist-prof-1",
-        userId: "dist-user-1",
-        isVerified: false
-      });
-      mockDb.distributorProfile.update.mockResolvedValue({
-        id: "dist-prof-1",
-        isVerified: true
-      });
-      mockDb.user.update.mockResolvedValue({});
-
-      const res = await request(app)
-        .patch("/admin/distributors/dist-prof-1/verify")
-        .set(adminHeaders)
-        .send({ isVerified: true });
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.isVerified).toBe(true);
-    });
-
-    it("Admin manages promotional banners (create & list)", async () => {
-      mockDb.banner.create.mockResolvedValue({
-        id: "banner-1",
-        title: "Promo Daur Ulang Plastik",
-        imageUrl: "https://example.com/banner.jpg",
-        isActive: true,
-        order: 1
-      });
-
-      const createRes = await request(app)
-        .post("/admin/banners")
-        .set(adminHeaders)
-        .send({ title: "Promo Daur Ulang Plastik", imageUrl: "https://example.com/banner.jpg" });
-
-      expect(createRes.status).toBe(201);
-      expect(createRes.body.data.title).toBe("Promo Daur Ulang Plastik");
-
-      mockDb.banner.findMany.mockResolvedValue([
-        { id: "banner-1", title: "Promo Daur Ulang Plastik", isActive: true }
-      ]);
-
-      const publicRes = await request(app).get("/banners");
-      expect(publicRes.status).toBe(200);
-      expect(publicRes.body.data.length).toBe(1);
-    });
-
-    it("Admin fetches AI quality monitoring logs", async () => {
-      mockDb.materialAlert.findMany.mockResolvedValue([
-        { id: "alert-1", queryText: "limbah kaca", locationFilter: "Semarang", createdAt: new Date() }
-      ]);
-      mockDb.chatMessage.findMany.mockResolvedValue([]);
-
-      const res = await request(app)
-        .get("/admin/ai-monitoring")
-        .set(adminHeaders);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.failedSearchAlerts.length).toBe(1);
-    });
-
     it("Non-admin access is blocked on /admin/* routes (403)", async () => {
       const res = await request(app)
-        .get("/admin/distributors")
+        .get("/admin/materials/pending")
         .set(dist1Headers);
 
       expect(res.status).toBe(403);
     });
+
   });
 
-  describe("Phase 11: Security & Guardrails Final Audit", () => {
+  describe("Phase 10: Security & Guardrails Final Audit", () => {
     it("Prompt injection: system prompt extraction attempt is refused", async () => {
       mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-1" });
       mockDb.chatConversation.findUnique.mockResolvedValue({ id: "conv-1", consumerId: "cons-prof-1" });
