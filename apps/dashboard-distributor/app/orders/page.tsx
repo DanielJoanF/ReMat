@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
-  Download,
   CheckCircle2,
   Truck,
   Clock,
@@ -243,10 +242,6 @@ function OrdersPageInner() {
               Pantau dan kelola semua transaksi penjualan material Anda.
             </p>
           </div>
-          <button className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-white text-[13px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
-            <Download className="w-4 h-4" />
-            Export CSV
-          </button>
         </div>
 
         {/* ── Top KPI Cards (Bento Grid) ──────────────────────── */}
