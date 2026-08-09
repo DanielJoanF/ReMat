@@ -7,12 +7,44 @@ import { useState } from 'react';
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': { title: 'Ringkasan', subtitle: 'Ringkasan performa & aktivitas pengelolaan limbah Anda.' },
+  '/': { title: 'Ringkasan', subtitle: 'Ringkasan performa & aktivitas pengelolaan limbah Anda.' },
   '/materials': { title: 'Kelola Material', subtitle: 'Kelola stok material daur ulang Anda.' },
   '/materials/create': { title: 'Tambah Material', subtitle: 'Isi informasi material baru.' },
   '/orders': { title: 'Pesanan', subtitle: 'Pantau dan kelola semua transaksi penjualan material Anda.' },
   '/circular': { title: 'Laporan Sirkular', subtitle: 'Pantau dampak ekonomi sirkular dari aktivitas daur ulang material.' },
   '/alerts': { title: 'Alert', subtitle: 'Kelola notifikasi dan alert terkait aktivitas Anda.' },
+  '/settings': { title: 'Pengaturan', subtitle: 'Kelola preferensi akun dan notifikasi distributor Anda.' },
+  '/profile': { title: 'Profil Toko', subtitle: 'Kelola informasi profil distributor dan toko Anda.' },
 };
+
+// Route resolver: longest-prefix match so nested routes (detail, edit, documents)
+// fall back to their section, never to the dashboard.
+const ROUTE_META: Array<[string, { title: string; subtitle: string }]> = [
+  ['/materials/create', pageMeta['/materials/create']],
+  ['/materials', pageMeta['/materials']],
+  ['/orders', pageMeta['/orders']],
+  ['/circular', pageMeta['/circular']],
+  ['/alerts', pageMeta['/alerts']],
+  ['/settings', pageMeta['/settings']],
+  ['/profile', pageMeta['/profile']],
+  ['/', pageMeta['/']],
+];
+
+function resolveMeta(pathname: string): { title: string; subtitle: string } {
+  // Sub-routes of materials keep their specific titles (edit, documents)
+  if (/\/materials\/[^/]+\/edit/.test(pathname)) {
+    return { title: 'Edit Material', subtitle: 'Perbarui informasi material.' };
+  }
+  if (/\/materials\/[^/]+\/documents/.test(pathname)) {
+    return { title: 'Dokumen Material', subtitle: 'Kelola dokumen dan foto material.' };
+  }
+  for (const [prefix, meta] of ROUTE_META) {
+    if (pathname === prefix || pathname.startsWith(prefix === '/' ? '/' : `${prefix}/`)) {
+      return meta;
+    }
+  }
+  return pageMeta['/dashboard'];
+}
 
 // Pages whose list is searchable — the header search writes a query param
 const SEARCHABLE: Record<string, string> = {
@@ -26,17 +58,7 @@ function HeaderInner() {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('search') || '');
 
-  const meta =
-    pageMeta[pathname] ??
-    (pathname.includes('/edit')
-      ? { title: 'Edit Material', subtitle: 'Perbarui informasi material.' }
-      : pathname.includes('/documents')
-        ? { title: 'Dokumen Material', subtitle: 'Kelola dokumen dan foto material.' }
-        : pathname.includes('/create')
-          ? pageMeta['/materials/create']
-          : pathname.startsWith('/materials')
-            ? pageMeta['/materials']
-            : pageMeta['/dashboard']);
+  const meta = resolveMeta(pathname);
 
   const searchableKey = SEARCHABLE[pathname];
 

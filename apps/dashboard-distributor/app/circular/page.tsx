@@ -35,7 +35,8 @@ function handleApiError(error: unknown, toast: ReturnType<typeof useToast>['toas
   toast({ type: msg === RATE_LIMIT_EXCEEDED ? 'warning' : 'error', message: msg === RATE_LIMIT_EXCEEDED ? 'Terlalu banyak permintaan. Silakan coba lagi.' : msg });
 }
 
-function fmtPeriod(p: string) {
+function fmtPeriod(p: string | undefined | null) {
+  if (!p || typeof p !== 'string' || !p.includes('-')) return '-';
   const [y, m] = p.split('-');
   return `${MONTHS[parseInt(m, 10) - 1] ?? m} ${y}`;
 }
