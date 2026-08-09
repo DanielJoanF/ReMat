@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Download,
   CheckCircle2,
@@ -11,6 +12,7 @@ import {
   Clock,
   ShoppingBag,
   Search,
+  X,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -18,7 +20,6 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/contexts/auth-context';
-import { useSearchParams } from 'next/navigation';
 
 import { getData, patchData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -108,6 +109,8 @@ export default function OrdersPage() {
 
 function OrdersPageInner() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const initialSearch = searchParams.get('search') || '';
   const { toast } = useToast();
   const { isReady } = useAuth();
@@ -119,7 +122,8 @@ function OrdersPageInner() {
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   const [activeTab, setActiveTab] = useState('SEMUA');
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -136,7 +140,7 @@ function OrdersPageInner() {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page, limit: PAGE_SIZE };
-      if (searchQuery) params.search = searchQuery;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (activeTab !== 'SEMUA') params.status = activeTab;
 
       const result = await getData<OrdersResponse>('/transactions/orders', params);
@@ -154,7 +158,7 @@ function OrdersPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, activeTab, refreshKey]);
+  }, [page, debouncedSearch, activeTab, refreshKey]);
 
   useEffect(() => {
     // Wait until AuthProvider has written the user identity to sessionStorage,
@@ -163,11 +167,34 @@ function OrdersPageInner() {
     fetchOrders();
   }, [isReady, fetchOrders]);
 
-  // Sync local searchQuery with URL search param (header search)
+  // Debounce the search box: only fire the API request once the user
+  // pauses typing (300ms), and always reset to page 1 on a new keyword.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      setDebouncedSearch(searchInput.trim() || '');
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // When the debounced keyword changes, restart from page 1 and reflect
+  // the keyword in the URL (keeps header search + deep links in sync).
+  useEffect(() => {
+    if (debouncedSearch === (searchParams.get('search') || '')) return;
+    const params = new URLSearchParams(searchParams.toString());
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    else params.delete('search');
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [debouncedSearch, searchParams, pathname, router]);
+
+  // Sync local searchInput with URL search param (e.g. header search / back navigation).
+  // NOTE: intentionally omit `searchInput` from deps to avoid an infinite loop:
+  // typing → debounce → URL update → searchParams change → this effect → reset input → loop.
   useEffect(() => {
     const urlSearch = searchParams.get('search') || '';
-    if (urlSearch !== searchQuery) setSearchQuery(urlSearch);
-  }, [searchParams, searchQuery]);
+    setSearchInput((prev) => (urlSearch !== prev ? urlSearch : prev));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleRefresh = () => { setRefreshKey((k) => k + 1); setPage(1); };
 
@@ -190,19 +217,16 @@ function OrdersPageInner() {
     }
   };
 
+  // Client-side filter: status tabs are applied here; search is handled
+  // server-side via ?search= (debounced in this component), so the two
+  // compose instead of overriding each other.
   const filteredOrders = orders.filter((order) => {
     if (activeTab !== 'SEMUA') {
       if (activeTab === 'PAID' && order.status !== 'PAID' && order.status !== 'CONFIRMED') return false;
       if (activeTab !== 'PAID' && order.status !== activeTab) return false;
     }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const buyer = order.consumer?.companyName ?? '';
-      if (!order.id.toLowerCase().includes(q) && !buyer.toLowerCase().includes(q)) return false;
-    }
     return true;
   });
-
   // ── Derived KPI values (from API data, never hardcoded) ──────────────
   const pendingOrders = orders.filter((o) => o.status === 'PENDING').length;
   const shippedOrders = orders.filter((o) => o.status === 'SHIPPED').length;
@@ -295,13 +319,23 @@ function OrdersPageInner() {
               <input
                 type="text"
                 placeholder="Cari Order ID, Pembeli..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-[13px] rounded-md border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-gray-400"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-9 pr-8 py-1.5 text-[13px] rounded-md border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-gray-400"
               />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => setSearchInput('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  title="Bersihkan pencarian"
+                  aria-label="Bersihkan pencarian"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
-
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -331,7 +365,9 @@ function OrdersPageInner() {
                 ) : filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-gray-400 text-[13px]">
-                      Tidak ada pesanan ditemukan.
+                      {debouncedSearch
+                        ? `Tidak ada pesanan yang cocok dengan pencarian "${debouncedSearch}".`
+                        : 'Tidak ada pesanan ditemukan.'}
                     </td>
                   </tr>
                 ) : (

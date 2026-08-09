@@ -148,10 +148,27 @@ const listPublicMaterials = async (query) => {
  */
 const listMyMaterials = async (userId, query) => {
   const distributorId = await getDistributorProfileId(userId);
-  const { status, page = 1, limit = 20 } = query;
+  const { status, search, page = 1, limit = 20 } = query;
 
   const where = { distributorId };
   if (status) where.status = status.toUpperCase();
+
+  // Full-text search across: title, material code, description, location,
+  // and category name. Prisma `contains` + insensitive maps to ILIKE.
+  if (search && String(search).trim()) {
+    const q = String(search).trim();
+    where.AND = [
+      {
+        OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { materialCode: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+          { location: { contains: q, mode: "insensitive" } },
+          { category: { name: { contains: q, mode: "insensitive" } } }
+        ]
+      }
+    ];
+  }
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const take = parseInt(limit);
