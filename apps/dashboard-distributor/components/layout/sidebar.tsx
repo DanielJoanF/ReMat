@@ -8,7 +8,6 @@ import {
   Box,
   ShoppingCart,
   BarChart3,
-  Settings,
   HelpCircle,
   LogOut,
   ChevronLeft,
@@ -33,7 +32,6 @@ const navItems: NavItem[] = [
   { label: 'Kelola Material', href: '/materials', icon: Box },
   { label: 'Pesanan', href: '/orders', icon: ShoppingCart },
   { label: 'Laporan Sirkular', href: '/circular', icon: BarChart3 },
-  { label: 'Pengaturan', href: '/settings', icon: Settings },
   { label: 'Profil Toko', href: '/profile', icon: User },
 ];
 
@@ -156,17 +154,18 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
 
   const footerLinks = (
     <div className="space-y-1 px-3 pb-2">
-      <Link
-              href="/settings"
+      <button
+              type="button"
+              onClick={() => window.open('mailto:support@remat.id', '_blank')}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface',
+                'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface',
                 collapsed && 'justify-center px-2'
               )}
               title={collapsed ? 'Bantuan' : undefined}
             >
               <HelpCircle className="h-[18px] w-[18px] text-[#A3AAB5]" />
               {!collapsed && <span>Bantuan</span>}
-            </Link>
+            </button>
       <button
         onClick={() => { logout(); }}
         className={cn(

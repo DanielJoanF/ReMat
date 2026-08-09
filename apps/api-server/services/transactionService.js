@@ -160,10 +160,25 @@ const listConsumerTransactions = async (userId, query) => {
  */
 const listDistributorOrders = async (userId, query) => {
   const distributorId = await getDistributorProfileId(userId);
-  const { status, page = 1, limit = 20 } = query;
+  const { status, search, page = 1, limit = 20 } = query;
 
   const where = { distributorId };
   if (status) where.status = status.toUpperCase();
+
+  // Server-side search: order ID, buyer name, or ordered material title.
+  // Prisma `contains` + insensitive maps to ILIKE on PostgreSQL.
+  if (search && String(search).trim()) {
+    const q = String(search).trim();
+    where.AND = [
+      {
+        OR: [
+          { id: { contains: q, mode: "insensitive" } },
+          { consumer: { companyName: { contains: q, mode: "insensitive" } } },
+          { items: { some: { material: { title: { contains: q, mode: "insensitive" } } } } }
+        ]
+      }
+    ];
+  }
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const take = parseInt(limit);

@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useCallback, useRef, Suspense, ComponentType } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 import {
   Plus,
@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Edit3,
   Trash2,
+  X,
   Send,
   RefreshCw,
   FileText,
@@ -120,6 +121,7 @@ function StatusPill({ status, stock }: { status: MaterialStatus; stock: number }
 
 function MaterialsPageInner() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
   const { toast } = useToast();
@@ -132,7 +134,8 @@ function MaterialsPageInner() {
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState('Semua Kategori');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('Semua Status');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -148,24 +151,23 @@ function MaterialsPageInner() {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page, limit: PAGE_SIZE };
-      if (searchQuery) params.search = searchQuery;
+      if (debouncedSearch) params.search = debouncedSearch;
       const result = await getData<MaterialsResponse>('/materials/my', params);
-            setMaterials(result.data ?? EMPTY_MATERIALS);
-            setTotalItems(result.pagination?.total ?? 0);
-            setTotalPages(result.pagination?.totalPages ?? 1);
-          } catch (error: unknown) {
-            setMaterials(EMPTY_MATERIALS);
-            setTotalItems(0);
-            setTotalPages(1);
-            toastRef.current({
-              type: 'error',
-              message: error instanceof Error ? error.message : 'Gagal memuat data material',
-            });
+      setMaterials(result.data ?? EMPTY_MATERIALS);
+      setTotalItems(result.pagination?.total ?? 0);
+      setTotalPages(result.pagination?.totalPages ?? 1);
+    } catch (error: unknown) {
+      setMaterials(EMPTY_MATERIALS);
+      setTotalItems(0);
+      setTotalPages(1);
+      toastRef.current({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Gagal memuat data material',
+      });
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  }, [page, debouncedSearch, refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Wait until AuthProvider has written the user identity to localStorage,
     // so the API request carries the correct x-user-id / x-user-role headers.
@@ -173,11 +175,34 @@ function MaterialsPageInner() {
     fetchMaterials();
   }, [isReady, fetchMaterials]);
 
-  // Sync local searchQuery with URL search param (header search)
+  // Debounce the search box: only fire the API request once the user
+  // pauses typing (300ms), and always reset to page 1 on a new keyword.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      setDebouncedSearch(searchInput.trim() || '');
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // When the debounced keyword changes, restart from page 1 and reflect
+  // the keyword in the URL (keeps header search + deep links in sync).
+  useEffect(() => {
+    if (debouncedSearch === (searchParams.get('search') || '')) return;
+    const params = new URLSearchParams(searchParams.toString());
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    else params.delete('search');
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [debouncedSearch, searchParams, pathname, router]);
+
+  // Sync local searchInput with URL search param (e.g. header search / back navigation).
+  // NOTE: intentionally omit `searchInput` from deps to avoid an infinite loop:
+  // typing → debounce → URL update → searchParams change → this effect → reset input → loop.
   useEffect(() => {
     const urlSearch = searchParams.get('search') || '';
-    if (urlSearch !== searchQuery) setSearchQuery(urlSearch);
-  }, [searchParams, searchQuery]);
+    setSearchInput((prev) => (urlSearch !== prev ? urlSearch : prev));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleRefresh = () => { setRefreshKey((k) => k + 1); setPage(1); };
 
@@ -219,7 +244,6 @@ function MaterialsPageInner() {
     if (selectedStatusFilter === 'Menunggu' && item.status !== 'PENDING_REVIEW') return false;
     if (selectedStatusFilter === 'Habis' && item.quantity !== 0 && item.status !== 'SUSPENDED') return false;
     if (selectedStatusFilter === 'Draft' && item.status !== 'DRAFT') return false;
-    if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
@@ -301,12 +325,22 @@ function MaterialsPageInner() {
               <input
                 type="text"
                 placeholder="Cari nama material, ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-[13px] rounded-md border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-gray-400"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-9 pr-8 py-1.5 text-[13px] rounded-md border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-gray-400"
               />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => setSearchInput('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  title="Bersihkan pencarian"
+                  aria-label="Bersihkan pencarian"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-
             {/* Dropdowns */}
             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               {/* Category Dropdown */}
@@ -378,7 +412,9 @@ function MaterialsPageInner() {
                 ) : filteredMaterials.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-gray-400 text-[13px]">
-                      Tidak ada material ditemukan.
+                      {debouncedSearch
+                        ? `Tidak ada material yang cocok dengan pencarian "${debouncedSearch}".`
+                        : 'Tidak ada material ditemukan.'}
                     </td>
                   </tr>
                 ) : (
