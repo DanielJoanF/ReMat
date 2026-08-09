@@ -15,7 +15,8 @@ const apiLimiter = rateLimit({
       statusCode: 429
     }
   },
-  skip: () => process.env.NODE_ENV === "test" // Disable in unit/integration test env
+  // Rate limit hanya aktif di produksi — di dev/test tidak perlu (agar nyaman ngembang)
+  skip: () => process.env.NODE_ENV !== "production"
 });
 
 /**
@@ -33,7 +34,8 @@ const aiLimiter = rateLimit({
       statusCode: 429
     }
   },
-  skip: () => process.env.NODE_ENV === "test" // Disable in test env
+  // Rate limit hanya aktif di produksi — di dev/test tidak perlu
+  skip: () => process.env.NODE_ENV !== "production"
 });
 
 module.exports = {
