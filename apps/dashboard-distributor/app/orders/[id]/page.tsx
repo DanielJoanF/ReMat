@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { OrderStatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
@@ -19,23 +19,18 @@ import { getData, patchData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
-interface Material { id: string; name: string; category?: string }
-interface Buyer { id: string; name: string; email?: string; phone?: string; company?: string; address?: string }
-interface OrderItem { id: string; material: Material; quantity: number; unit: string; unitPrice: number; totalPrice: number }
+interface Material { id: string; title: string; unit: string; materialCode?: string }
+interface OrderConsumer { id?: string; companyName?: string; userId?: string }
+interface OrderItem { id: string; material: Material; quantity: number; unit: string; unitPrice: number; subtotal: number }
 interface OrderDetail {
   id: string; items: OrderItem[]; status: OrderStatus; createdAt: string; updatedAt: string;
-  trackingNumber?: string; totalAmount: number; buyer?: Buyer; buyerId?: string; notes?: string;
+  trackingNumber?: string; totalAmount: number; consumer?: OrderConsumer | null; notes?: string;
 }
 
 const TIMELINE_STEPS: { key: OrderStatus; label: string }[] = [
   { key: 'PENDING', label: 'Dibuat' }, { key: 'CONFIRMED', label: 'Dikonfirmasi' },
   { key: 'PAID', label: 'Dibayar' }, { key: 'SHIPPED', label: 'Dikirim' }, { key: 'COMPLETED', label: 'Selesai' },
 ];
-const STATUS_CFG: Record<OrderStatus, { label: string; variant: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' }> = {
-  PENDING: { label: 'Menunggu', variant: 'warning' }, CONFIRMED: { label: 'Dikonfirmasi', variant: 'primary' },
-  PAID: { label: 'Dibayar', variant: 'info' }, SHIPPED: { label: 'Dikirim', variant: 'secondary' },
-  COMPLETED: { label: 'Selesai', variant: 'success' }, CANCELLED: { label: 'Dibatalkan', variant: 'danger' },
-};
 const STATUS_ORDER = ['PENDING', 'CONFIRMED', 'PAID', 'SHIPPED', 'COMPLETED'] as const;
 
 function handleApiError(error: unknown, toast: ReturnType<typeof useToast>['toast'], fb: string) {
@@ -50,7 +45,7 @@ function StatusTimeline({ current }: { current: OrderStatus }) {
   const pct = cancelled ? '0%' : `${(idx / (STATUS_ORDER.length - 1)) * 100}%`;
   const cls = (i: number, key: OrderStatus) => {
     const active = i <= idx && !cancelled, cur = key === current;
-    return cur ? 'border-[#1B5E20] bg-[#E8F5E9]0 text-white scale-110 shadow-lg'
+    return cur ? 'border-[#1B5E20] bg-[#E8F5E9] text-[#1B5E20] scale-110 shadow-lg'
       : active ? 'border-[#1B5E20] bg-[#C8E6C9] text-[#1B5E20]' : 'border-gray-300 bg-white text-gray-400';
   };
   const txtCls = (i: number, key: OrderStatus) => {
@@ -62,7 +57,7 @@ function StatusTimeline({ current }: { current: OrderStatus }) {
     <div className="w-full">
       <div className="hidden sm:flex items-center justify-between relative">
         <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200" />
-        <div className="absolute top-5 left-0 h-0.5 bg-[#E8F5E9]0 transition-all duration-500" style={{ width: pct }} />
+        <div className="absolute top-5 left-0 h-0.5 bg-[#E8F5E9] transition-all duration-500" style={{ width: pct }} />
         {TIMELINE_STEPS.map((s, i) => (
           <div key={s.key} className="relative z-10 flex flex-col items-center">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${cls(i, s.key)}`}>
@@ -179,8 +174,8 @@ export default function OrderDetailPage() {
     </DashboardLayout>
   );
 
-  const cfg = STATUS_CFG[order.status ?? ''];
-    const subtotal = order?.items?.reduce((s, i) => s + i.totalPrice, 0) ?? 0;
+  const lineTotal = (item: OrderItem) => item.subtotal ?? item.quantity * item.unitPrice;
+  const subtotal = order?.items?.reduce((s, i) => s + lineTotal(i), 0) ?? 0;
 
   const Actions = () => {
     switch (order.status) {
@@ -193,8 +188,18 @@ export default function OrderDetailPage() {
       case 'CONFIRMED': return <div className="flex items-center gap-2 text-gray-500"><Clock className="w-5 h-5" /><span className="text-sm font-medium">Menunggu Pembayaran</span></div>;
       case 'PAID': return <Button variant="info" onClick={() => setShipOpen(true)} loading={actionLoading}><Truck className="w-4 h-4" /> Kirim Pesanan</Button>;
       case 'SHIPPED': return <div className="flex items-center gap-2 text-gray-500"><Truck className="w-5 h-5" /><span className="text-sm font-medium">Dalam Perjalanan</span></div>;
-      case 'COMPLETED': return <div className="flex items-center gap-2 text-green-600"><Check className="w-5 h-5" /><span className="text-sm font-semibold">Pesanan Selesai</span></div>;
-      case 'CANCELLED': return <div className="flex items-center gap-2 text-red-500"><Ban className="w-5 h-5" /><span className="text-sm font-medium">Pesanan Dibatalkan</span></div>;
+      case 'COMPLETED': return (
+        <div className="flex items-center gap-3">
+          <OrderStatusBadge status="COMPLETED" className="px-4 py-2 text-sm" />
+          <span className="text-xs text-gray-500">Pesanan selesai — tidak ada tindakan lebih lanjut.</span>
+        </div>
+      );
+      case 'CANCELLED': return (
+        <div className="flex items-center gap-3">
+          <OrderStatusBadge status="CANCELLED" className="px-4 py-2 text-sm" />
+          <span className="text-xs text-gray-500">Pesanan telah dibatalkan.</span>
+        </div>
+      );
       default: return null;
     }
   };
@@ -216,7 +221,7 @@ export default function OrderDetailPage() {
                 <p className="text-sm text-gray-500">ID: {order.id}</p>
               </div>
             </div>
-            <Badge variant={cfg.variant} className="text-sm px-4 py-1.5">{cfg.label}</Badge>
+            <OrderStatusBadge status={order.status} className="text-sm px-4 py-1.5" />
           </div>
         </div>
 
@@ -242,12 +247,12 @@ export default function OrderDetailPage() {
                 {order.items.map((item, i) => (
                   <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{i + 1}. {item.material.name}</p>
-                      {item.material.category && <p className="text-xs text-gray-500 mt-0.5">{item.material.category}</p>}
+                      <p className="font-medium text-gray-900">{i + 1}. {item.material.title}</p>
+                      {item.material.materialCode && <p className="text-xs text-gray-500 mt-0.5">Kode: {item.material.materialCode}</p>}
                     </div>
                     <div className="text-right ml-4">
-                      <p className="text-sm text-gray-700">{item.quantity.toLocaleString('id-ID')} {item.unit} × {formatCurrency(item.unitPrice)}</p>
-                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(item.totalPrice)}</p>
+                      <p className="text-sm text-gray-700">{item.quantity.toLocaleString('id-ID')} {item.material.unit || item.unit || 'kg'} × {formatCurrency(item.unitPrice)}</p>
+                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(lineTotal(item))}</p>
                     </div>
                   </div>
                 ))}
@@ -256,16 +261,13 @@ export default function OrderDetailPage() {
           </Card>
 
           <div className="space-y-6">
-            {order.buyer && (
+            {order.consumer && (
               <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><User className="w-5 h-5 text-[#2E7D32]" /> Informasi Pembeli</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div><p className="text-xs text-gray-500">Nama</p><p className="text-sm font-medium text-gray-900">{order.buyer.name}</p></div>
-                    {order.buyer.company && <div><p className="text-xs text-gray-500">Perusahaan</p><p className="text-sm font-medium text-gray-900">{order.buyer.company}</p></div>}
-                    {order.buyer.email && <div><p className="text-xs text-gray-500">Email</p><p className="text-sm text-gray-700">{order.buyer.email}</p></div>}
-                    {order.buyer.phone && <div><p className="text-xs text-gray-500">Telepon</p><p className="text-sm text-gray-700">{order.buyer.phone}</p></div>}
-                    {order.buyer.address && <div><p className="text-xs text-gray-500">Alamat</p><p className="text-sm text-gray-700">{order.buyer.address}</p></div>}
+                    <div><p className="text-xs text-gray-500">Nama</p><p className="text-sm font-medium text-gray-900">{order.consumer.companyName || 'Konsumen Umum'}</p></div>
+                    {order.consumer.companyName && <div><p className="text-xs text-gray-500">Perusahaan</p><p className="text-sm font-medium text-gray-900">{order.consumer.companyName}</p></div>}
                   </div>
                 </CardContent>
               </Card>
@@ -277,8 +279,8 @@ export default function OrderDetailPage() {
                 <div className="space-y-3">
                   {order.items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">{item.material.name}</span>
-                      <span className="text-gray-900">{formatCurrency(item.totalPrice)}</span>
+                      <span className="text-gray-600">{item.material.title}</span>
+                      <span className="text-gray-900">{formatCurrency(lineTotal(item))}</span>
                     </div>
                   ))}
                   <div className="border-t border-gray-200 pt-3 flex justify-between">

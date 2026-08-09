@@ -15,6 +15,7 @@ const paymentRoutes = require("./routes/payments");
 const ratingRoutes = require("./routes/ratings");
 const searchRoutes = require("./routes/search");
 const alertRoutes = require("./routes/alerts");
+const notificationRoutes = require("./routes/notifications");
 const analyticsRoutes = require("./routes/analytics");
 const circularReportRoutes = require("./routes/circularReports");
 const chatbotRoutes = require("./routes/chatbot");
@@ -46,6 +47,7 @@ app.use("/transactions/:transactionId", paymentRoutes); // /transactions/:transa
 app.use("/transactions/:transactionId", ratingRoutes);  // /transactions/:transactionId/rate & /rating
 app.use("/search", aiLimiter, searchRoutes);
 app.use("/alerts", alertRoutes);
+app.use("/notifications", notificationRoutes);
 app.use("/analytics", analyticsRoutes);
 app.use("/circular-reports", circularReportRoutes);
 app.use("/chat", aiLimiter, chatbotRoutes);

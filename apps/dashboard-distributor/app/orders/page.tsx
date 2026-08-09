@@ -22,6 +22,7 @@ import { useSearchParams } from 'next/navigation';
 
 import { getData, patchData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { OrderStatusBadge } from '@/components/ui/status-badge';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ interface OrderItem {
 
 interface OrderConsumer {
   id?: string;
-  name?: string;
+  companyName?: string;
   email?: string;
 }
 
@@ -95,14 +96,6 @@ function handleApiError(error: unknown, toast: ReturnType<typeof useToast>['toas
   } else {
     toast({ type: 'error', message });
   }
-}
-
-function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  if (status === 'PENDING') return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#FEE2E2] text-[#DC2626]">Menunggu</span>;
-  if (status === 'CONFIRMED' || status === 'PAID') return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8F1FF] text-[#3B82F6]">Diproses</span>;
-  if (status === 'SHIPPED') return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8F1FF] text-[#3B82F6]">Dikirim</span>;
-  if (status === 'COMPLETED') return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#D1FAE5] text-[#059669]">Selesai</span>;
-  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600">Dibatalkan</span>;
 }
 
 export default function OrdersPage() {
@@ -204,7 +197,7 @@ function OrdersPageInner() {
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const buyer = order.consumer?.name ?? '';
+      const buyer = order.consumer?.companyName ?? '';
       if (!order.id.toLowerCase().includes(q) && !buyer.toLowerCase().includes(q)) return false;
     }
     return true;
@@ -316,7 +309,7 @@ function OrdersPageInner() {
                   <th className="py-3 px-4 w-32">Order ID</th>
                   <th className="py-3 px-4">Pembeli</th>
                   <th className="py-3 px-4">Produk</th>
-                  <th className="py-3 px-4 text-center">Jumlah (Ton)</th>
+                  <th className="py-3 px-4 text-center">Jumlah</th>
                   <th className="py-3 px-4 text-right">Total Harga</th>
                   <th className="py-3 px-4 text-center">Status</th>
                   <th className="py-3 px-4 text-center w-40">Aksi</th>
@@ -343,10 +336,12 @@ function OrdersPageInner() {
                   </tr>
                 ) : (
                   filteredOrders.map((order) => {
-                    const materialName = order.items?.[0]?.material?.title || '-';
-                    const qty = order.items?.[0]?.quantity || 0;
-                    const unit = order.items?.[0]?.unit || 'kg';
-                    const displayQty = qty >= 1000 && unit === 'kg' ? `${(qty/1000).toFixed(1).replace('.0', '')} Ton` : `${qty} ${unit === 'kg' ? 'Kg' : unit}`;
+                    const firstItem = order.items?.[0];
+                    const materialName = firstItem?.material?.title || '-';
+                    const additionalItems = (order.items?.length ?? 1) - 1;
+                    const qty = firstItem?.quantity ?? 0;
+                    const unit = firstItem?.material?.unit || firstItem?.unit || 'kg';
+                    const displayQty = `${qty.toLocaleString('id-ID')} ${unit}`;
 
                     return (
                       <tr key={order.id} className="hover:bg-gray-50/70 transition-colors">
@@ -354,11 +349,12 @@ function OrdersPageInner() {
                           {order.id.startsWith('#') ? order.id : `#ORD-${order.id.slice(0,4)}`}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-[#0B1C30]">{order.consumer?.name || 'Konsumen Umum'}</div>
+                          <div className="font-semibold text-[#0B1C30] whitespace-nowrap">{order.consumer?.companyName || 'Konsumen Umum'}</div>
                           <div className="text-[11px] text-gray-500 mt-0.5">{formatDate(order.createdAt).replace('2023', '23').split(' ').slice(0, 3).join(' ')}</div>
                         </td>
-                        <td className="py-3 px-4 text-gray-700 font-medium">
+                        <td className="py-3 px-4 text-gray-700 font-medium whitespace-nowrap">
                           {materialName}
+                          {additionalItems > 0 && <span className="text-gray-400"> +{additionalItems} lainnya</span>}
                         </td>
                         <td className="py-3 px-4 text-center text-gray-700 tabular-nums">
                           {displayQty}
@@ -371,7 +367,7 @@ function OrdersPageInner() {
                         </td>
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
-                            <Link href={`/orders/${order.id.replace('#', '')}`} className="px-2.5 py-1.5 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 text-[11px] font-semibold transition-colors">
+                            <Link href={`/orders/${order.id.replace(/^#/, '')}`} className="px-2.5 py-1.5 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 text-[11px] font-semibold transition-colors">
                               Detail
                             </Link>
                             {order.status === 'PENDING' && (
@@ -406,22 +402,24 @@ function OrdersPageInner() {
               Menampilkan <span className="font-semibold text-gray-700">1 - {filteredOrders.length}</span> dari <span className="font-semibold text-gray-700">{totalItems}</span> pesanan
             </div>
 
-            <div className="flex items-center gap-1">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="w-7 h-7 rounded flex items-center justify-center border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <button
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="w-7 h-7 rounded flex items-center justify-center border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="w-7 h-7 rounded flex items-center justify-center border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="w-7 h-7 rounded flex items-center justify-center border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

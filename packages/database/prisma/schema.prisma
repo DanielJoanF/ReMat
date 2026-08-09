@@ -88,6 +88,7 @@ model User {
   distributorProfile DistributorProfile?
   consumerProfile    ConsumerProfile?
   bannersManaged     Banner[]
+  notifications      Notification[]
 
   @@map("users")
 }
@@ -364,4 +365,30 @@ model Banner {
   manager User? @relation(fields: [managedBy], references: [id])
 
   @@map("banners")
+}
+
+// =========================================
+// NOTIFICATION
+// =========================================
+
+// Notifikasi in-app untuk distributor (di bell header dashboard).
+// Ter-generate otomatis dari event sistem (order dibuat, status berubah,
+// stok menipis) — disimpan per user. Preferensi channel di-lokasi-kan di
+// settings (localStorage remat_notif_*) — frontend memfilter sebelum render.
+model Notification {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id") // Distributor user id
+  type             String // order_new, order_status, stock_low, payment_received, material_verification
+  title            String
+  message          String
+  relatedId        String?  @map("related_id") // e.g. order_id
+  link             String? // e.g. /orders/:id
+  isRead           Boolean  @default(false) @map("is_read")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

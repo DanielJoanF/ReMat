@@ -1,6 +1,24 @@
 const { prisma } = require("@remat/database");
 const { getConsumerProfileId, getDistributorProfileId } = require("../utils/profile");
 
+/** Format angka ke Rupiah singkat (contoh: Rp 1.130.000). */
+const formatIDR = (n) =>
+  `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
+
+/**
+ * Fire-and-forget in-app notification for a distributor (order events).
+ * Never throws — notification failures must not break the order flow.
+ */
+const notifyDistributor = async (userId, type, title, message, relatedId = null, link = null) => {
+  try {
+    await prisma.notification.create({
+      data: { userId, type, title, message, relatedId, link }
+    });
+  } catch (err) {
+    console.error("[notify] failed:", err.message);
+  }
+};
+
 /**
  * Consumer creates a transaction (order).
  * items: [{ materialId, quantity }]
@@ -86,9 +104,22 @@ const createTransaction = async (userId, data) => {
     include: {
       items: { include: { material: { select: { id: true, title: true, unit: true } } } },
       consumer: { select: { id: true, companyName: true } },
-      distributor: { select: { id: true, companyName: true } }
+      distributor: { select: { id: true, companyName: true, userId: true } }
     }
   });
+
+  // Notify distributor of a new incoming order
+  const distUser = transaction.distributor?.userId;
+  if (distUser) {
+    notifyDistributor(
+      distUser,
+      "order_new",
+      "Pesanan Baru Masuk",
+      `Ada pesanan baru senilai ${formatIDR(totalAmount)} menunggu konfirmasi Anda.`,
+      transaction.id,
+      `/orders/${transaction.id}`
+    );
+  }
 
   return transaction;
 };
@@ -212,10 +243,22 @@ const confirmOrder = async (transactionId, userId) => {
     throw err;
   }
 
-  return prisma.transaction.update({
+  const updated = await prisma.transaction.update({
     where: { id: transactionId },
     data: { status: "CONFIRMED" }
   });
+
+  // Notify distributor that the order was confirmed
+  notifyDistributor(
+    userId,
+    "order_status",
+    "Pesanan Dikonfirmasi",
+    "Pesanan telah dikonfirmasi dan menunggu pembayaran.",
+    transactionId,
+    `/orders/${transactionId}`
+  );
+
+  return updated;
 };
 
 /**
@@ -247,10 +290,22 @@ const markShipped = async (transactionId, userId) => {
     throw err;
   }
 
-  return prisma.transaction.update({
+  const updated = await prisma.transaction.update({
     where: { id: transactionId },
     data: { status: "SHIPPED" }
   });
+
+  // Notify distributor that the order was shipped
+  notifyDistributor(
+    userId,
+    "order_status",
+    "Pesanan Dikirim",
+    "Pesanan telah ditandai dikirim. Pembeli dapat melacak pengiriman.",
+    transactionId,
+    `/orders/${transactionId}`
+  );
+
+  return updated;
 };
 
 /**

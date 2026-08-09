@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import {
-  Settings, Bell, ShieldCheck, Save, ArrowRight, Mail, Building2,
+  Settings, Bell, Save, Mail,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -113,37 +112,14 @@ export default function DistributorSettingsPage() {
   const emailDisabled = !emailMaster;
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Settings className="w-6 h-6 text-[#2E7D32]" /> Pengaturan
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">Kelola preferensi akun dan notifikasi distributor Anda.</p>
-        </div>
-
-        {/* CTA menuju Profil Toko — single source of truth untuk data toko */}
-        <Card className="bg-gradient-to-r from-[#065F46] to-[#047857] text-white border-0">
-          <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-5">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
-                <Building2 className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="font-semibold">Data Toko &amp; Perusahaan</p>
-                <p className="text-sm text-emerald-100">
-                  Untuk mengubah data profil &amp; perusahaan, kunjungi Profil Toko.
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/profile"
-              className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[#065F46] shadow-sm transition hover:bg-emerald-50"
-            >
-              Profil Toko <ArrowRight className="h-4 w-4" />
-            </Link>
-          </CardContent>
-        </Card>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Settings className="w-6 h-6 text-[#2E7D32]" /> Pengaturan
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">Atur jenis notifikasi &amp; alert yang ingin Anda terima.</p>
+          </div>
 
         {/* Notifikasi */}
         <Card>
@@ -210,29 +186,6 @@ export default function DistributorSettingsPage() {
                 <Save className="w-4 h-4" /> Simpan Pengaturan
               </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Keamanan */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-[#2E7D32]" /> Keamanan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              Kelola kata sandi dan keamanan akun Anda melalui halaman login.
-            </p>
-            <Button
-              variant="secondary"
-              className="mt-4"
-              onClick={() => {
-                window.location.href = process.env.NEXT_PUBLIC_LOGIN_URL || 'http://localhost:3003/';
-              }}
-            >
-              Ubah Kata Sandi
-            </Button>
           </CardContent>
         </Card>
       </div>

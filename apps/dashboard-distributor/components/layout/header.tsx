@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
+import { NotificationBell } from './notification-bell';
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': { title: 'Ringkasan', subtitle: 'Ringkasan performa & aktivitas pengelolaan limbah Anda.' },
@@ -93,6 +94,7 @@ function HeaderInner() {
             </div>
           </div>
         )}
+        <NotificationBell />
       </div>
     </header>
   );

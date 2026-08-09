@@ -1,27 +1,44 @@
 import { cn } from '@/lib/utils';
 
-type Status = 'DRAFT' | 'PENDING_REVIEW' | 'ACTIVE' | 'REJECTED' | 'SUSPENDED';
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
 
-const statusConfig: Record<Status, { label: string; bg: string; text: string }> = {
-  DRAFT: { label: 'Draft', bg: 'bg-surface-container-low', text: 'text-on-surface-variant' },
-  PENDING_REVIEW: { label: 'Pending', bg: 'bg-status-pending', text: 'text-tertiary' },
-  ACTIVE: { label: 'Active', bg: 'bg-status-active-listing', text: 'text-primary' },
-  REJECTED: { label: 'Rejected', bg: 'bg-red-100', text: 'text-red-700' },
-  SUSPENDED: { label: 'Suspended', bg: 'bg-sold-out', text: 'text-on-surface-variant' },
+/** Palet badge status yang dipakai bersama di halaman list & detail pesanan. */
+export const STATUS_BADGE_STYLES: Record<OrderStatus, string> = {
+  PENDING: 'bg-[#FEF3C7] text-[#92400E]', // kuning (amber)
+  CONFIRMED: 'bg-[#FFEDD5] text-[#C2410C]', // oranye
+  PAID: 'bg-[#EDE9FE] text-[#6D28D9]', // ungu
+  SHIPPED: 'bg-[#DBEAFE] text-[#1D4ED8]', // biru
+  COMPLETED: 'bg-[#D1FAE5] text-[#047857]', // hijau
+  CANCELLED: 'bg-[#FEE2E2] text-[#B91C1C]', // merah
 };
 
-export function StatusBadge({ status, className }: { status: Status | string; className?: string }) {
-  const config = statusConfig[status as Status] || statusConfig.DRAFT;
+export const STATUS_BADGE_LABELS: Record<OrderStatus, string> = {
+  PENDING: 'Menunggu',
+  CONFIRMED: 'Dikonfirmasi',
+  PAID: 'Dibayar',
+  SHIPPED: 'Dikirim',
+  COMPLETED: 'Selesai',
+  CANCELLED: 'Dibatalkan',
+};
+
+interface OrderStatusBadgeProps {
+  status: OrderStatus;
+  className?: string;
+}
+
+export function OrderStatusBadge({ status, className }: OrderStatusBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-display font-medium',
-        config.bg,
-        config.text,
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap',
+        STATUS_BADGE_STYLES[status] ?? 'bg-gray-100 text-gray-600',
         className
       )}
     >
-      {config.label}
+      {STATUS_BADGE_LABELS[status] ?? status}
     </span>
   );
 }
+
+/** Alias agar barrel `@/components/ui` (`export { StatusBadge } from './status-badge'`) tetap valid. */
+export const StatusBadge = OrderStatusBadge;
