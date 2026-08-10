@@ -381,29 +381,12 @@ const updateMaterial = async (materialId, userId, data) => {
 };
 
 /**
- * Delete a material (owner only; any status, guarded by active transactions).
+ * Delete a material (owner only; any status, any transaction history).
+ * Transaction items keep their snapshot (unitPrice/subtotal) — materialId
+ * is set to NULL by the FK onDelete: SetNull, so order history stays intact.
  */
 const deleteMaterial = async (materialId, userId) => {
   const material = await verifyOwnership(materialId, userId);
-
-  // Deleting a material that is part of an active (non-cancelled) transaction would
-  // leave a transaction pointing at a deleted product. Guard against that, and allow
-  // deletion in every other case (all statuses).
-  const activeItems = await prisma.transactionItem.findFirst({
-    where: {
-      materialId,
-      transaction: { status: { notIn: ["CANCELLED"] } }
-    },
-    select: { id: true }
-  });
-
-  if (activeItems) {
-    const err = new Error(
-      "Material tidak dapat dihapus karena masih terhubung ke transaksi yang sedang berjalan."
-    );
-    err.statusCode = 400;
-    throw err;
-  }
 
   // Delete embedding + material atomically. documents cascade automatically.
   await prisma.$transaction([

@@ -267,6 +267,24 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       expect(res.status).toBe(200);
       expect(res.body.data.status).toBe("ACTIVE");
     });
+
+    it("Distributor can delete material even when linked to active transactions", async () => {
+      mockDb.material.findUnique.mockResolvedValue({
+        id: "mat-100",
+        status: "ACTIVE",
+        distributor: { userId: "dist-user-1" }
+      });
+      mockDb.$executeRawUnsafe.mockResolvedValue(1);
+      mockDb.material.delete.mockResolvedValue({ id: "mat-100" });
+      mockDb.$transaction.mockImplementation((promises) => Promise.all(promises));
+
+      const res = await request(app)
+        .delete("/materials/mat-100")
+        .set(dist1Headers);
+
+      expect(res.status).toBe(200);
+      expect(mockDb.material.delete).toHaveBeenCalledWith({ where: { id: "mat-100" } });
+    });
   });
 
   describe("Phase 2: Public Listing & Filtering", () => {
