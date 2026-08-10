@@ -12,7 +12,6 @@ async function main() {
   await prisma.chatConversation.deleteMany();
   await prisma.materialAlert.deleteMany();
   await prisma.circularReport.deleteMany();
-  await prisma.rating.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.transactionItem.deleteMany();
   await prisma.transaction.deleteMany();
@@ -414,26 +413,6 @@ async function main() {
   }
 
   console.log("30 Transactions, 60 Items, and 30 Payments created.");
-
-  // ==========================================
-  // 9. RATINGS (Total: 20)
-  // ==========================================
-  for (let i = 0; i < 20; i++) {
-    const tx = createdTransactions[i];
-    const distributor = createdDistributors[i % createdDistributors.length];
-
-    await prisma.rating.create({
-      data: {
-        transactionId: tx.id,
-        consumerId: tx.consumerId,
-        distributorId: distributor.distributorProfile.id,
-        score: Math.floor(Math.random() * 2) + 4, // 4 or 5 stars
-        comment: "Material berkualitas sangat baik, pengiriman tepat waktu, respon penjual cepat & profesional!",
-      }
-    });
-  }
-
-  console.log("20 Ratings created.");
 
   // ==========================================
   // 10. CIRCULAR REPORTS (Total: 12 - Monthly)

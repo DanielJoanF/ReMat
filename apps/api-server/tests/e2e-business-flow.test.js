@@ -54,10 +54,6 @@ const { mockDb, mockGenerateEmbedding, mockIsAvailable } = vi.hoisted(() => {
       create: vi.fn(),
       findUnique: vi.fn()
     },
-    rating: {
-      create: vi.fn(),
-      findUnique: vi.fn()
-    },
     materialAlert: {
       create: vi.fn(),
       findMany: vi.fn(),
@@ -398,32 +394,6 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       expect(res.body.data.status).toBe("COMPLETED");
     });
 
-    it("Consumer submits rating for completed transaction", async () => {
-      mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-1" });
-      mockDb.transaction.findUnique.mockResolvedValue({
-        id: "tx-1",
-        status: "COMPLETED",
-        consumerId: "cons-prof-1",
-        distributorId: "dist-prof-1",
-        rating: null
-      });
-      mockDb.rating.create.mockResolvedValue({
-        id: "rate-1",
-        transactionId: "tx-1",
-        consumerId: "cons-prof-1",
-        distributorId: "dist-prof-1",
-        score: 5,
-        comment: "Material berkualitas tinggi dan pengiriman cepat!"
-      });
-
-      const res = await request(app)
-        .post("/transactions/tx-1/rate")
-        .set(cons1Headers)
-        .send({ score: 5, comment: "Material berkualitas tinggi dan pengiriman cepat!" });
-
-      expect(res.status).toBe(201);
-      expect(res.body.data.score).toBe(5);
-    });
   });
 
   describe("Phase 4: Cross-Tenant & Role Security Controls", () => {
@@ -475,23 +445,6 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       expect(res.status).toBe(403);
     });
 
-    it("Consumer cannot rate uncompleted order (400)", async () => {
-      mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-1" });
-      mockDb.transaction.findUnique.mockResolvedValue({
-        id: "tx-1",
-        status: "CONFIRMED",
-        consumerId: "cons-prof-1",
-        distributorId: "dist-prof-1",
-        rating: null
-      });
-
-      const res = await request(app)
-        .post("/transactions/tx-1/rate")
-        .set(cons1Headers)
-        .send({ score: 5 });
-
-      expect(res.status).toBe(400);
-    });
 
     it("Distributor cannot make consumer purchase (403)", async () => {
       const res = await request(app)
