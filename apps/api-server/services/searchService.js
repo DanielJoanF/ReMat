@@ -90,6 +90,8 @@ const smartSearch = async (queryText, filters = {}) => {
       INNER JOIN categories c ON c.id = m.category_id
       INNER JOIN distributor_profiles dp ON dp.id = m.distributor_id
       WHERE m.status = 'ACTIVE'
+        AND (me.status IS NULL OR me.status = 'success')
+        AND me.embedding IS NOT NULL
         AND 1 - (me.embedding <=> $1::vector) >= $2
         ${extraWhere}
       ORDER BY similarity DESC

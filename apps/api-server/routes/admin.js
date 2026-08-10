@@ -14,4 +14,7 @@ router.patch("/materials/:id/review", adminController.reviewMaterial);
 router.patch("/materials/:id/suspend", adminController.suspendMaterial);
 router.delete("/materials/:id", adminController.deleteMaterial);
 
+// Embedding Maintenance Job Endpoint
+router.post("/embeddings/reprocess", adminController.reprocessEmbeddings);
+
 module.exports = router;

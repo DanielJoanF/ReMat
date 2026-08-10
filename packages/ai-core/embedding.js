@@ -63,7 +63,7 @@ const generateDeterministicEmbedding = (text) => {
 
 /**
  * Generate an embedding vector for the given text.
- * Supports OpenRouter, OpenAI, or gratis fallback embedding.
+ * Requires OPENROUTER_API_KEY or OPENAI_API_KEY.
  *
  * @param {string} text - The text to embed.
  * @returns {Promise<{ embedding: number[], model: string }>}
@@ -78,6 +78,15 @@ const generateEmbedding = async (text) => {
   }
 
   const openrouterKey = process.env.OPENROUTER_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  const apiKey = openrouterKey || openaiKey;
+
+  if (!apiKey) {
+    console.error(
+      "[CRITICAL] [ai-core] Embedding API key (OPENROUTER_API_KEY / OPENAI_API_KEY) is missing. Cannot generate AI embedding."
+    );
+    throw new Error("[ai-core] Embedding API key is missing. Silent fallback disabled.");
+  }
 
   let client = null;
   let model = process.env.EMBEDDING_MODEL || "openai/text-embedding-3-small";
@@ -91,14 +100,10 @@ const generateEmbedding = async (text) => {
         "X-Title": "ReMat Platform"
       }
     });
-  }
-
-  if (!client) {
-    // Fallback gratis tanpa butuh API key (bebas biaya)
-    return {
-      embedding: generateDeterministicEmbedding(text),
-      model: "fallback-hash-embedding"
-    };
+  } else {
+    client = new OpenAI({
+      apiKey: openaiKey
+    });
   }
 
   try {
@@ -114,26 +119,24 @@ const generateEmbedding = async (text) => {
       model
     };
   } catch (err) {
-    console.warn(`[ai-core] Embedding API error (${err.message}). Using fallback vector.`);
-    return {
-      embedding: generateDeterministicEmbedding(text),
-      model: "fallback-hash-embedding"
-    };
+    console.error(`[CRITICAL] [ai-core] Embedding API request failed: ${err.message}`);
+    throw new Error(`[ai-core] Embedding API error: ${err.message}`);
   }
 };
 
 /**
- * Check if embedding service is available.
+ * Check if embedding service is configured and available.
  */
 const isAvailable = () => {
   if (global.isEmbeddingAvailableMock !== undefined) {
     return global.isEmbeddingAvailableMock;
   }
-  return true;
+  return !!(process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY);
 };
 
 module.exports = {
   generateEmbedding,
+  generateDeterministicEmbedding,
   isAvailable,
   EXPECTED_DIMENSIONS,
   DEFAULT_MODEL

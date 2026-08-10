@@ -46,9 +46,23 @@ const deleteMaterial = async (req, res, next) => {
   }
 };
 
+const embeddingService = require("../services/embeddingService");
+
+const reprocessEmbeddings = async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const includeLowQuality = req.query.includeLowQuality === "true";
+    const result = await embeddingService.reprocessStaleEmbeddings({ limit, includeLowQuality });
+    res.json({ data: result, message: "Stale/failed embeddings reprocess job completed" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   listPendingMaterials,
   reviewMaterial,
   suspendMaterial,
-  deleteMaterial
+  deleteMaterial,
+  reprocessEmbeddings
 };

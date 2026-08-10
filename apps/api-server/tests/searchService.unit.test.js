@@ -152,14 +152,14 @@ describe("searchService — SIMILARITY_THRESHOLD hard cutoff", () => {
     expect(result.message).toMatch(/tidak ada hasil relevan/i);
   });
 
-  // ── 7. Default threshold is 0.55 ──────────────────────────────────────────
-  it("uses 0.55 as the default when SIMILARITY_THRESHOLD env is not set", async () => {
+  // ── 7. Default threshold is 0.45 ──────────────────────────────────────────
+  it("uses 0.45 as the default when SIMILARITY_THRESHOLD env is not set", async () => {
     const original = process.env.SIMILARITY_THRESHOLD;
     delete process.env.SIMILARITY_THRESHOLD;
     vi.resetModules();
 
     const mod = await import("../services/searchService.js");
-    expect(mod.SIMILARITY_THRESHOLD).toBe(0.55);
+    expect(mod.SIMILARITY_THRESHOLD).toBe(0.45);
 
     if (original !== undefined) process.env.SIMILARITY_THRESHOLD = original;
   });

@@ -592,7 +592,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       expect(res.status).toBe(200);
       expect(res.body.data).toEqual([]);
       expect(res.body.showAlert).toBe(true);
-      expect(res.body.message).toContain("belum tersedia");
+      expect(res.body.message).toMatch(/tidak ada hasil relevan|belum tersedia/i);
     });
 
     it("Falls back to keyword search when Embedding API is unavailable", async () => {

@@ -203,8 +203,10 @@ model MaterialDocument {
 model MaterialEmbedding {
   id             String   @id @default(uuid())
   materialId     String   @unique @map("material_id")
-  embedding      Unsupported("vector(1536)")
+  embedding      Unsupported("vector(1536)")?
   embeddingModel String   @map("embedding_model")
+  status         String   @default("success") @map("status")
+  errorMessage   String?  @map("error_message")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
