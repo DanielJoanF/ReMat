@@ -107,7 +107,12 @@ export default function DashboardPage() {
         },
         {
           label: 'Nilai Inventori',
-          value: `${(metrics.summary.estimatedInventoryValue / 1_000_000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} jt`,
+          value:
+            metrics.summary.estimatedInventoryValue >= 1_000_000
+              ? `${(metrics.summary.estimatedInventoryValue / 1_000_000).toLocaleString('id-ID', {
+                  maximumFractionDigits: 1,
+                })} jt`
+              : formatCurrency(metrics.summary.estimatedInventoryValue),
           trend: null,
           icon: Leaf,
           iconBg: 'bg-[#E8F5E9]',

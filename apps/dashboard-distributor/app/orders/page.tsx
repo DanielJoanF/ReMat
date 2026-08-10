@@ -82,7 +82,6 @@ const EMPTY_ORDERS: Order[] = [];
 const STATUS_TABS = [
   { value: 'SEMUA', label: 'Semua' },
   { value: 'PENDING', label: 'Dibuat' },
-  { value: 'CONFIRMED', label: 'Dikonfirmasi' },
   { value: 'COMPLETED', label: 'Selesai' },
   { value: 'CANCELLED', label: 'Dibatalkan' },
 ];
@@ -234,15 +233,6 @@ function OrdersPageInner() {
     <DashboardLayout>
       <div className="space-y-4 lg:space-y-5">
         {/* ── Page Header ───────────────────────────────────────── */}
-        {/* <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-[20px] lg:text-[24px] font-bold text-[#0B1C30] leading-tight">Manajemen Pesanan</h1>
-            <p className="text-[13px] text-gray-500 mt-0.5">
-              Pantau dan kelola semua transaksi penjualan material Anda.
-            </p>
-          </div>
-        </div> */}
-
         {/* ── Top KPI Cards (Bento Grid) ──────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-[#F0FDF4] rounded-lg shadow-card p-4 border border-green-100 flex items-center justify-between hover:shadow-card-hover transition-shadow">
@@ -257,20 +247,6 @@ function OrdersPageInner() {
               <ShoppingBag className="w-5 h-5 text-green-600" />
             </div>
           </div>
-
-          <div className="bg-[#EFF6FF] rounded-lg shadow-card p-4 border border-blue-100 flex items-center justify-between hover:shadow-card-hover transition-shadow">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                <span className="text-[11px] font-bold tracking-wider uppercase text-blue-700">PESANAN DIKONFIRMASI</span>
-              </div>
-              <p className="text-[24px] font-extrabold text-[#0B1C30] tabular-nums">{confirmedOrders}</p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-blue-600" />
-            </div>
-          </div>
-
           <div className="bg-white rounded-lg shadow-card p-4 border border-gray-100 flex items-center justify-between hover:shadow-card-hover transition-shadow">
             <div>
               <div className="flex items-center gap-2 mb-1">

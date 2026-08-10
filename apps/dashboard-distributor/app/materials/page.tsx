@@ -416,14 +416,6 @@ function MaterialsPageInner() {
           </div>
 
           {/* Card 2: Stok Aktif */}
-          <div className="bg-white rounded-lg shadow-card p-4 border border-gray-100 flex flex-col justify-between hover:shadow-card-hover transition-shadow">
-            <div className="flex items-center gap-2 text-gray-500 mb-1">
-              <ShoppingBag className="w-4 h-4 text-gray-400" />
-              <span className="text-[11px] font-bold tracking-wider uppercase text-gray-500">STOK AKTIF (TON)</span>
-            </div>
-            <p className="text-[24px] font-extrabold text-primary tabular-nums">{activeStockTon.toLocaleString('id-ID')}</p>
-          </div>
-
           {/* Card 3: Perlu Verifikasi (Highlighted Soft Red) */}
           <div className="bg-[#FDF2F2] rounded-lg shadow-card p-4 border border-red-100 flex flex-col justify-between hover:shadow-card-hover transition-shadow">
             <div className="flex items-center gap-2 text-red-600 mb-1">
