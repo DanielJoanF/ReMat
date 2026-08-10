@@ -296,7 +296,15 @@ const createMaterial = async (userId, data) => {
   });
 
   // Fire-and-forget: generate embedding for new material
-  upsertMaterialEmbedding(material.id, material.title, category.name, material.description);
+  upsertMaterialEmbedding(
+    material.id,
+    material.title,
+    category.name,
+    material.description,
+    material.unit,
+    material.qualityGrade,
+    material.location
+  );
 
   return material;
 };
@@ -351,8 +359,17 @@ const updateMaterial = async (materialId, userId, data) => {
   });
 
   // Fire-and-forget: re-generate embedding on content change
-  if (data.title !== undefined || data.description !== undefined || data.categoryId !== undefined) {
-    upsertMaterialEmbedding(updated.id, updated.title, updated.category.name, updated.description);
+  if (data.title !== undefined || data.description !== undefined || data.categoryId !== undefined ||
+      data.unit !== undefined || data.qualityGrade !== undefined || data.location !== undefined) {
+    upsertMaterialEmbedding(
+      updated.id,
+      updated.title,
+      updated.category.name,
+      updated.description,
+      updated.unit,
+      updated.qualityGrade,
+      updated.location
+    );
   }
 
   return updated;
@@ -483,7 +500,15 @@ const reviewMaterial = async (materialId, action) => {
 
   // When approved, ensure embedding exists (may have been generated at create time)
   if (action === "approve") {
-    upsertMaterialEmbedding(updated.id, updated.title, updated.category.name, updated.description);
+    upsertMaterialEmbedding(
+      updated.id,
+      updated.title,
+      updated.category.name,
+      updated.description,
+      updated.unit,
+      updated.qualityGrade,
+      updated.location
+    );
   }
 
   return updated;

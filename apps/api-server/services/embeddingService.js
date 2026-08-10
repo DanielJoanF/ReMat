@@ -9,10 +9,26 @@ const { generateEmbedding } = require("@remat/ai-core");
 
 /**
  * Compose the text to embed from material fields.
- * Format: "title - categoryName: description"
+ *
+ * Format uses a structured template so the embedding captures:
+ *  - What the material IS   (title, category)
+ *  - What it's LIKE        (qualityGrade)
+ *  - How it's MEASURED     (unit)
+ *  - Where it IS           (location)
+ *  - Additional context    (description)
+ *
+ * Example output:
+ *  "Besi Beton - Logam, grade A, per KG, lokasi Jakarta: Besi beton ulir 10mm..."
  */
-const composeEmbeddingText = (title, categoryName, description) => {
-  return `${title} - ${categoryName}: ${description}`;
+const composeEmbeddingText = (title, categoryName, description, unit, qualityGrade, location) => {
+  const parts = [`${title} - ${categoryName}`];
+  if (qualityGrade) parts.push(`grade ${qualityGrade}`);
+  if (unit) parts.push(`per ${unit}`);
+  if (location) parts.push(`lokasi ${location.trim()}`);
+
+  const header = parts.join(", ");
+  const body = description ? description.trim() : "";
+  return body ? `${header}: ${body}` : header;
 };
 
 /**
@@ -26,10 +42,21 @@ const composeEmbeddingText = (title, categoryName, description) => {
  * @param {string} title
  * @param {string} categoryName
  * @param {string} description
+ * @param {string} [unit]         - e.g. "KG", "TON"
+ * @param {string} [qualityGrade] - e.g. "A", "B"
+ * @param {string} [location]     - e.g. "Jakarta"
  */
-const upsertMaterialEmbedding = async (materialId, title, categoryName, description) => {
+const upsertMaterialEmbedding = async (
+  materialId,
+  title,
+  categoryName,
+  description,
+  unit,
+  qualityGrade,
+  location
+) => {
   try {
-    const text = composeEmbeddingText(title, categoryName, description);
+    const text = composeEmbeddingText(title, categoryName, description, unit, qualityGrade, location);
     const { embedding, model } = await generateEmbedding(text);
 
     // Format vector as PostgreSQL array literal: [0.1,0.2,...]

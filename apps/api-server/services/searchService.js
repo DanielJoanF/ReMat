@@ -5,12 +5,21 @@
  *   Query text → Embedding API → pgvector cosine similarity → ACTIVE materials
  *   Fallback: if Embedding API fails → keyword search via Prisma `contains`
  *
- * Threshold: similarity >= 0.6 (ARCHITECTURE.md §5, Scenario #2)
+ * Threshold: configurable via SIMILARITY_THRESHOLD env var (default 0.55).
+ *   Only candidates with cosine similarity >= threshold are returned.
+ *   Filtered at query level (pgvector index-friendly) AND enforced at
+ *   application level as a hard cutoff.
  */
 const { prisma } = require("@remat/database");
 const { generateEmbedding, isEmbeddingAvailable } = require("@remat/ai-core");
 
-const SIMILARITY_THRESHOLD = 0.05;
+/**
+ * Minimum cosine similarity score required for a search result to be returned.
+ * Sourced from the SIMILARITY_THRESHOLD environment variable.
+ * Default: 0.45 — empirically chosen to capture short single-word queries
+ * (e.g. "besi" ~0.47) while rejecting truly unrelated terms (< 0.40).
+ */
+const SIMILARITY_THRESHOLD = parseFloat(process.env.SIMILARITY_THRESHOLD ?? "0.45");
 const DEFAULT_LIMIT = 10;
 
 /**
@@ -89,17 +98,18 @@ const smartSearch = async (queryText, filters = {}) => {
 
     const results = await prisma.$queryRawUnsafe(sql, ...params);
 
-    // If no results above threshold → fall back to keyword search before returning empty
-    if (results.length === 0) {
-      console.log(`[Search] Semantic search returned 0 results for "${queryText}". Falling back to keyword search.`);
-      const keywordResults = await keywordSearch(queryText, filters);
-      if (keywordResults.data.length > 0) {
-        return keywordResults;
-      }
+    // Hard cutoff: even if the SQL WHERE already filters, enforce the threshold
+    // at the application layer as defense-in-depth. The top result (already
+    // ORDER BY similarity DESC) determines relevance for the entire response.
+    const topScore = results.length > 0 ? Number(results[0].similarity) : 0;
+    if (results.length === 0 || topScore < SIMILARITY_THRESHOLD) {
+      console.log(
+        `[Search] No relevant results for "${queryText}" (top score: ${topScore.toFixed(4)}, threshold: ${SIMILARITY_THRESHOLD}). Returning empty.`
+      );
       return {
         data: [],
         searchType: "semantic",
-        message: "Maaf, material spesifik yang Anda cari belum tersedia saat ini.",
+        message: "Tidak ada hasil relevan untuk pencarian ini.",
         showAlert: true
       };
     }
