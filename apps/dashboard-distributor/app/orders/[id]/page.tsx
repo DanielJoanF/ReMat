@@ -20,7 +20,7 @@ import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
 interface Material { id: string; title: string; unit: string; materialCode?: string }
-interface OrderConsumer { id?: string; companyName?: string; userId?: string }
+interface OrderConsumer { id?: string; companyName?: string; userId?: string; user?: { name: string } }
 interface OrderItem { id: string; material: Material; quantity: number; unit: string; unitPrice: number; subtotal: number }
 interface OrderDetail {
   id: string; items: OrderItem[]; status: OrderStatus; createdAt: string; updatedAt: string;
@@ -28,10 +28,11 @@ interface OrderDetail {
 }
 
 const TIMELINE_STEPS: { key: OrderStatus; label: string }[] = [
-  { key: 'PENDING', label: 'Dibuat' }, { key: 'CONFIRMED', label: 'Dikonfirmasi' },
-  { key: 'PAID', label: 'Dibayar' }, { key: 'SHIPPED', label: 'Dikirim' }, { key: 'COMPLETED', label: 'Selesai' },
+  { key: 'PENDING', label: 'Dibuat' },
+  { key: 'CONFIRMED', label: 'Dikonfirmasi' },
+  { key: 'COMPLETED', label: 'Selesai' },
 ];
-const STATUS_ORDER = ['PENDING', 'CONFIRMED', 'PAID', 'SHIPPED', 'COMPLETED'] as const;
+const STATUS_ORDER = ['PENDING', 'CONFIRMED', 'COMPLETED'] as const;
 
 function handleApiError(error: unknown, toast: ReturnType<typeof useToast>['toast'], fb: string) {
   const msg = error instanceof Error ? error.message : fb;
@@ -179,15 +180,17 @@ export default function OrderDetailPage() {
 
   const Actions = () => {
     switch (order.status) {
-      case 'PENDING': return (
+      case 'PENDING':
+      case 'CONFIRMED': return (
         <div className="flex items-center gap-3">
-          <Button variant="success" onClick={handleConfirm} loading={actionLoading}><Check className="w-4 h-4" /> Konfirmasi Pesanan</Button>
-          <Button variant="danger" onClick={() => setCancelOpen(true)} disabled={actionLoading}><Ban className="w-4 h-4" /> Batalkan</Button>
+          <Button variant="success" onClick={handleConfirm} loading={actionLoading}>
+            <Check className="w-4 h-4" /> Konfirmasi Pesanan
+          </Button>
+          <Button variant="danger" onClick={() => setCancelOpen(true)} disabled={actionLoading}>
+            <Ban className="w-4 h-4" /> Batalkan
+          </Button>
         </div>
       );
-      case 'CONFIRMED': return <div className="flex items-center gap-2 text-gray-500"><Clock className="w-5 h-5" /><span className="text-sm font-medium">Menunggu Pembayaran</span></div>;
-      case 'PAID': return <Button variant="info" onClick={() => setShipOpen(true)} loading={actionLoading}><Truck className="w-4 h-4" /> Kirim Pesanan</Button>;
-      case 'SHIPPED': return <div className="flex items-center gap-2 text-gray-500"><Truck className="w-5 h-5" /><span className="text-sm font-medium">Dalam Perjalanan</span></div>;
       case 'COMPLETED': return (
         <div className="flex items-center gap-3">
           <OrderStatusBadge status="COMPLETED" className="px-4 py-2 text-sm" />
@@ -260,22 +263,26 @@ export default function OrderDetailPage() {
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
-            {order.consumer && (
-              <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><User className="w-5 h-5 text-[#2E7D32]" /> Informasi Pembeli</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div><p className="text-xs text-gray-500">Nama</p><p className="text-sm font-medium text-gray-900">{order.consumer.companyName || 'Konsumen Umum'}</p></div>
-                    {order.consumer.companyName && <div><p className="text-xs text-gray-500">Perusahaan</p><p className="text-sm font-medium text-gray-900">{order.consumer.companyName}</p></div>}
+          <Card>
+            <CardContent className="divide-y divide-gray-100 p-6 space-y-5">
+              {order.consumer && (
+                <div className="space-y-3 first:pt-0">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <User className="w-5 h-5 text-[#2E7D32]" /> Informasi Pembeli
+                  </h3>
+                  <div>
+                    <p className="text-xs text-gray-500">Nama</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {order.consumer.user?.name || order.consumer.companyName || 'Konsumen Umum'}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                </div>
+              )}
 
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#2E7D32]" /> Ringkasan Harga</CardTitle></CardHeader>
-              <CardContent>
+              <div className="pt-5 space-y-3">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-[#2E7D32]" /> Ringkasan Harga
+                </h3>
                 <div className="space-y-3">
                   {order.items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between text-sm">
@@ -292,29 +299,32 @@ export default function OrderDetailPage() {
                     <span className="text-lg font-bold text-[#1B5E20]">{formatCurrency(order.totalAmount)}</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {order.trackingNumber && (
-              <Card>
-                <CardContent>
+              {order.trackingNumber && (
+                <div className="pt-5">
                   <div className="flex items-center gap-3">
                     <Truck className="w-5 h-5 text-[#2E7D32]" />
-                    <div><p className="text-xs text-gray-500">Nomor Resi</p><p className="text-sm font-mono font-medium text-gray-900">{order.trackingNumber}</p></div>
+                    <div>
+                      <p className="text-xs text-gray-500">Nomor Resi</p>
+                      <p className="text-sm font-mono font-medium text-gray-900">{order.trackingNumber}</p>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-500">Dibuat</span><span className="text-gray-700">{formatDateTime(order.createdAt)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Diperbarui</span><span className="text-gray-700">{formatDateTime(order.updatedAt)}</span></div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+
+              <div className="pt-5 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Dibuat</span>
+                  <span className="text-gray-700">{formatDateTime(order.createdAt)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Diperbarui</span>
+                  <span className="text-gray-700">{formatDateTime(order.updatedAt)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 

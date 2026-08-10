@@ -328,31 +328,11 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       expect(res.body.data.totalAmount).toBe(10000000);
     });
 
-    it("Distributor confirms order -> status = CONFIRMED", async () => {
-      mockDb.distributorProfile.findUnique.mockResolvedValue({ id: "dist-prof-1" });
-      mockDb.transaction.findUnique.mockResolvedValue({
-        id: "tx-1",
-        status: "PENDING",
-        distributorId: "dist-prof-1"
-      });
-      mockDb.transaction.update.mockResolvedValue({
-        id: "tx-1",
-        status: "CONFIRMED"
-      });
-
-      const res = await request(app)
-        .patch("/transactions/tx-1/confirm")
-        .set(dist1Headers);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("CONFIRMED");
-    });
-
-    it("Consumer pays -> status = PAID", async () => {
+    it("Consumer pays -> status = CONFIRMED", async () => {
       mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-1" });
       mockDb.transaction.findUnique.mockResolvedValue({
         id: "tx-1",
-        status: "CONFIRMED",
+        status: "PENDING",
         consumerId: "cons-prof-1",
         totalAmount: 10000000,
         payment: null
@@ -368,7 +348,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
 
       mockDb.$transaction.mockResolvedValue([
         mockPayment,
-        { id: "tx-1", status: "PAID" }
+        { id: "tx-1", status: "CONFIRMED" }
       ]);
 
       const res = await request(app)
@@ -380,32 +360,12 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       expect(res.body.data.status).toBe("SUCCESS");
     });
 
-    it("Distributor marks shipped -> status = SHIPPED", async () => {
+    it("Distributor confirms order -> status = COMPLETED", async () => {
       mockDb.distributorProfile.findUnique.mockResolvedValue({ id: "dist-prof-1" });
       mockDb.transaction.findUnique.mockResolvedValue({
         id: "tx-1",
-        status: "PAID",
+        status: "CONFIRMED",
         distributorId: "dist-prof-1"
-      });
-      mockDb.transaction.update.mockResolvedValue({
-        id: "tx-1",
-        status: "SHIPPED"
-      });
-
-      const res = await request(app)
-        .patch("/transactions/tx-1/ship")
-        .set(dist1Headers);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("SHIPPED");
-    });
-
-    it("Consumer confirms receipt -> status = COMPLETED", async () => {
-      mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-1" });
-      mockDb.transaction.findUnique.mockResolvedValue({
-        id: "tx-1",
-        status: "SHIPPED",
-        consumerId: "cons-prof-1"
       });
       mockDb.transaction.update.mockResolvedValue({
         id: "tx-1",
@@ -413,8 +373,8 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       });
 
       const res = await request(app)
-        .patch("/transactions/tx-1/receive")
-        .set(cons1Headers);
+        .patch("/transactions/tx-1/confirm")
+        .set(dist1Headers);
 
       expect(res.status).toBe(200);
       expect(res.body.data.status).toBe("COMPLETED");
@@ -468,7 +428,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       mockDb.distributorProfile.findUnique.mockResolvedValue({ id: "dist-prof-2" });
       mockDb.transaction.findUnique.mockResolvedValue({
         id: "tx-1",
-        status: "PENDING",
+        status: "CONFIRMED",
         distributorId: "dist-prof-1"
       });
 
@@ -483,7 +443,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-2" });
       mockDb.transaction.findUnique.mockResolvedValue({
         id: "tx-1",
-        status: "CONFIRMED",
+        status: "PENDING",
         consumerId: "cons-prof-1",
         totalAmount: 10000000,
         payment: null
@@ -501,7 +461,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
       mockDb.consumerProfile.findUnique.mockResolvedValue({ id: "cons-prof-1" });
       mockDb.transaction.findUnique.mockResolvedValue({
         id: "tx-1",
-        status: "SHIPPED",
+        status: "CONFIRMED",
         consumerId: "cons-prof-1",
         distributorId: "dist-prof-1",
         rating: null

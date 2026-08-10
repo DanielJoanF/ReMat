@@ -13,7 +13,7 @@ export const STATUS_BADGE_STYLES: Record<OrderStatus, string> = {
 };
 
 export const STATUS_BADGE_LABELS: Record<OrderStatus, string> = {
-  PENDING: 'Menunggu',
+  PENDING: 'Dibuat',
   CONFIRMED: 'Dikonfirmasi',
   PAID: 'Dibayar',
   SHIPPED: 'Dikirim',

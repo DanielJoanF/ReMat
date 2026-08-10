@@ -215,7 +215,12 @@ const getMaterialById = async (id, user) => {
           companyName: true,
           city: true,
           isVerified: true,
-          userId: true
+          userId: true,
+          user: {
+            select: {
+              phone: true
+            }
+          }
         }
       },
       documents: true,

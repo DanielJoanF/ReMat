@@ -150,15 +150,6 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="max-w-layout mx-auto space-y-5">
-        {/* Action bar */}
-        <div className="flex items-center justify-end">
-          <Link href="/materials/create">
-            <button className="inline-flex items-center gap-2 bg-[#065F46] hover:bg-[#047857] text-white font-semibold px-4 py-2.5 rounded-lg shadow-sm active:scale-95 transition-all text-[13px]">
-              <Plus className="h-4 w-4" />
-              Unggah Data Limbah
-            </button>
-          </Link>
-        </div>
 
         {/* KPI Cards - Bento 4-Column Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

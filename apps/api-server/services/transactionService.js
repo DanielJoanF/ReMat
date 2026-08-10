@@ -188,7 +188,7 @@ const listDistributorOrders = async (userId, query) => {
       where,
       include: {
         items: { include: { material: { select: { id: true, title: true, unit: true } } } },
-        consumer: { select: { id: true, companyName: true } },
+        consumer: { select: { id: true, companyName: true, user: { select: { name: true } } } },
         payment: { select: { id: true, status: true, method: true } }
       },
       orderBy: { createdAt: "desc" },
@@ -209,8 +209,8 @@ const getTransactionById = async (id, user) => {
     where: { id },
     include: {
       items: { include: { material: { select: { id: true, title: true, unit: true, materialCode: true } } } },
-      consumer: { select: { id: true, companyName: true, userId: true } },
-      distributor: { select: { id: true, companyName: true, userId: true } },
+      consumer: { select: { id: true, companyName: true, userId: true, user: { select: { name: true } } } },
+      distributor: { select: { id: true, companyName: true, userId: true, user: { select: { phone: true } } } },
       payment: true,
       rating: true
     }
@@ -252,23 +252,23 @@ const confirmOrder = async (transactionId, userId) => {
     throw err;
   }
 
-  if (transaction.status !== "PENDING") {
-    const err = new Error(`Can only confirm PENDING orders. Current: ${transaction.status}`);
+  if (transaction.status !== "PENDING" && transaction.status !== "CONFIRMED") {
+    const err = new Error(`Can only confirm PENDING or CONFIRMED orders. Current: ${transaction.status}`);
     err.statusCode = 400;
     throw err;
   }
 
   const updated = await prisma.transaction.update({
     where: { id: transactionId },
-    data: { status: "CONFIRMED" }
+    data: { status: "COMPLETED" }
   });
 
   // Notify distributor that the order was confirmed
   notifyDistributor(
     userId,
     "order_status",
-    "Pesanan Dikonfirmasi",
-    "Pesanan telah dikonfirmasi dan menunggu pembayaran.",
+    "Pesanan Selesai",
+    "Pesanan telah dikonfirmasi oleh distributor dan selesai.",
     transactionId,
     `/orders/${transactionId}`
   );

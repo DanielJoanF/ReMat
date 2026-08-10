@@ -138,7 +138,11 @@ function QrisPaymentModal({ totalAmount, material, orderId, distributorPhone, on
     `*ID Pesanan:* ${orderId || "Baru dibuat"}\n\n` +
     `Mohon konfirmasi pesanan saya. Terima kasih!`
   );
-  const waNumber = distributorPhone?.replace(/[^0-9]/g, "") || "6281234567890";
+  let cleanPhone = distributorPhone?.replace(/[^0-9]/g, "") || "";
+  if (cleanPhone.startsWith("0")) {
+    cleanPhone = "62" + cleanPhone.slice(1);
+  }
+  const waNumber = cleanPhone || "6281234567890";
   const waUrl = `https://wa.me/${waNumber}?text=${waMessage}`;
 
   return (
@@ -530,7 +534,7 @@ export default function MaterialDetailPage() {
           totalAmount={material.price * quantity}
           material={material}
           orderId={createdOrderId}
-          distributorPhone={material.distributor?.phone}
+          distributorPhone={material.distributor?.user?.phone}
           onClose={() => setShowQrisModal(false)}
         />
       )}
