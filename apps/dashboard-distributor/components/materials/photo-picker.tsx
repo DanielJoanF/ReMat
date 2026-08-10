@@ -79,17 +79,49 @@ export function PhotoPicker({
 
   return (
     <div className="space-y-4">
-      <div
-        onClick={() => inputRef.current?.click()}
-        className={cn(
-          'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-8 transition-colors',
-          'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
-        )}
-      >
-        <Upload className="mb-2 h-8 w-8 text-gray-400" />
-        <p className="text-sm font-medium text-gray-700">Klik untuk memilih foto</p>
-        <p className="mt-1 text-xs text-gray-500">JPG, PNG, WebP - Maks 10MB, hingga {MAX_PHOTOS} foto</p>
-      </div>
+      {files.length === 0 ? (
+        <div
+          onClick={() => inputRef.current?.click()}
+          className={cn(
+            'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-8 transition-colors',
+            'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
+          )}
+        >
+          <Upload className="mb-2 h-8 w-8 text-gray-400" />
+          <p className="text-sm font-medium text-gray-700">Klik untuk memilih foto</p>
+          <p className="mt-1 text-xs text-gray-500">JPG, PNG, WebP - Maks 10MB, hingga {MAX_PHOTOS} foto</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {files.map((f, i) => (
+            <div key={`${f.name}-${i}`} className="group relative overflow-hidden rounded-lg border border-gray-200 aspect-square">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previews[i] || ''}
+                alt={f.name}
+                className="h-full w-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="absolute right-2 top-2 rounded-md bg-white/90 p-1.5 text-red-600 shadow-md transition-colors hover:bg-red-50"
+                title="Hapus foto"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          {files.length < MAX_PHOTOS && (
+            <div
+              onClick={() => inputRef.current?.click()}
+              className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed aspect-square border-gray-300 hover:border-primary-400 hover:bg-gray-50"
+            >
+              <Upload className="h-6 w-6 text-gray-400" />
+              <span className="mt-1 text-xs text-gray-500">Tambah Foto</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <input
         ref={inputRef}
@@ -100,31 +132,10 @@ export function PhotoPicker({
         onChange={(e) => add(e.target.files)}
       />
 
-      {files.length === 0 ? (
+      {files.length === 0 && (
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <ImageIcon className="h-4 w-4" />
           Belum ada foto dipilih (opsional).
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-          {files.map((f, i) => (
-            <div key={`${f.name}-${i}`} className="group relative overflow-hidden rounded-lg border border-gray-200">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={previews[i] || ''}
-                alt={f.name}
-                className="h-24 w-full object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => remove(i)}
-                className="absolute right-1 top-1 rounded-md bg-white/90 p-1 text-red-600 shadow-sm hover:bg-red-50"
-                title="Hapus foto"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
         </div>
       )}
     </div>

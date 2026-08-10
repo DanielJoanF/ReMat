@@ -3,6 +3,7 @@
  * Uses service role key for server-side uploads.
  */
 const { createClient } = require("@supabase/supabase-js");
+const WebSocket = require("ws");
 
 const BUCKET_NAME = "materials";
 
@@ -19,7 +20,9 @@ const getSupabaseClient = () => {
     return null;
   }
 
-  supabase = createClient(url, key);
+  supabase = createClient(url, key, {
+    realtime: { transport: WebSocket },
+  });
   return supabase;
 };
 

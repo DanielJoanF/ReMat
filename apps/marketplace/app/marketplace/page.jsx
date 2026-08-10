@@ -16,6 +16,15 @@ import { CardGridSkeleton } from "@/components/ui/SkeletonLoader";
 import EmptyState from "@/components/ui/EmptyState";
 import { api } from "@/lib/api";
 
+const REGIONS = {
+  "DKI Jakarta": ["Jakarta Pusat", "Jakarta Selatan", "Jakarta Barat", "Jakarta Utara", "Jakarta Timur"],
+  "Jawa Barat": ["Bandung", "Bogor", "Depok", "Bekasi", "Cirebon", "Sukabumi"],
+  "Jawa Tengah": ["Semarang", "Surakarta", "Magelang", "Salatiga", "Pekalongan", "Tegal"],
+  "Jawa Timur": ["Surabaya", "Malang", "Sidoarjo", "Gresik", "Kediri", "Madiun"],
+  "DI Yogyakarta": ["Yogyakarta", "Sleman", "Bantul", "Kulon Progo", "Gunungkidul"],
+  "Banten": ["Tangerang", "Tangerang Selatan", "Serang", "Cilegon"]
+};
+
 const FALLBACK_CATEGORIES = [
   "Plastik", "Kertas & Kardus", "Logam", "Kaca", "Elektronik", "Tekstil", "Limbah Organik", "Minyak Jelantah", "Kayu", "Makanan"
 ];
@@ -41,6 +50,13 @@ function MarketplaceContent() {
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+
+  const initialLocation = searchParams.get("location") || "";
+  const initialProvince = Object.keys(REGIONS).find((prov) =>
+    REGIONS[prov].includes(initialLocation)
+  ) || "";
+
+  const [selectedProvince, setSelectedProvince] = useState(initialProvince);
 
   // Filter state (synced with URL)
   const [filters, setFilters] = useState({
@@ -134,14 +150,24 @@ function MarketplaceContent() {
   };
 
   const clearFilters = () => {
+    setSelectedProvince("");
     applyFilters({ categories: [], location: "", minPrice: "", maxPrice: "", grades: [], sort: "newest" });
   };
 
-  const hasFilters = filters.categories.length > 0 || filters.location || filters.minPrice || filters.maxPrice || filters.grades.length > 0;
+  const hasFilters = filters.categories.length > 0 || filters.location || selectedProvince || filters.minPrice || filters.maxPrice || filters.grades.length > 0;
 
   const filteredMaterials = materials.filter((m) => {
     if (filters.categories.length && !filters.categories.includes(m.category?.name)) return false;
-    if (filters.location && m.location !== filters.location) return false;
+    
+    // Location filtering
+    if (filters.location) {
+      if (m.location !== filters.location) return false;
+    } else if (selectedProvince) {
+      // Province selected, but no city (Semua Kota selected)
+      const cities = REGIONS[selectedProvince] || [];
+      if (!cities.includes(m.location)) return false;
+    }
+    
     if (filters.grades.length && !filters.grades.includes(m.quality_grade)) return false;
     if (filters.minPrice && m.price < Number(filters.minPrice)) return false;
     if (filters.maxPrice && m.price > Number(filters.maxPrice)) return false;
@@ -213,19 +239,42 @@ function MarketplaceContent() {
           </div>
 
           {/* Lokasi */}
-          <div>
-            <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Lokasi (Kota)</span>
-            <select
-              id="location-filter"
-              value={filters.location}
-              onChange={(e) => applyFilters({ ...filters, location: e.target.value })}
-              className="input-base h-10.5 font-medium border-gray-200"
-            >
-              <option value="">Semua Kota</option>
-              {locationsList.map((loc) => (
-                <option key={loc} value={loc}>{loc}</option>
-              ))}
-            </select>
+          <div className="space-y-3">
+            <div>
+              <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Provinsi Gudang</span>
+              <select
+                id="province-filter"
+                value={selectedProvince}
+                onChange={(e) => {
+                  const prov = e.target.value;
+                  setSelectedProvince(prov);
+                  // Reset city filter to empty when changing province
+                  applyFilters({ ...filters, location: "" });
+                }}
+                className="input-base h-10.5 font-medium border-gray-200"
+              >
+                <option value="">Semua Provinsi</option>
+                {Object.keys(REGIONS).map((prov) => (
+                  <option key={prov} value={prov}>{prov}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Kota / Kabupaten</span>
+              <select
+                id="location-filter"
+                value={filters.location}
+                disabled={!selectedProvince}
+                onChange={(e) => applyFilters({ ...filters, location: e.target.value })}
+                className="input-base h-10.5 font-medium border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">Semua Kota</option>
+                {selectedProvince && (REGIONS[selectedProvince] || []).map((ct) => (
+                  <option key={ct} value={ct}>{ct}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Harga */}

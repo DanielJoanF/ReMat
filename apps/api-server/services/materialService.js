@@ -173,7 +173,9 @@ const listMyMaterials = async (userId, query) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const take = parseInt(limit);
 
-  const [materials, total] = await Promise.all([
+  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+  const [materials, total, allMyMaterials, soldCount] = await Promise.all([
     prisma.material.findMany({
       where,
       include: {
@@ -185,8 +187,35 @@ const listMyMaterials = async (userId, query) => {
       skip,
       take
     }),
-    prisma.material.count({ where })
+    prisma.material.count({ where }),
+    prisma.material.findMany({
+      where: { distributorId }
+    }),
+    prisma.transactionItem.count({
+      where: {
+        transaction: {
+          distributorId,
+          status: "COMPLETED",
+          createdAt: { gte: startOfMonth }
+        }
+      }
+    })
   ]);
+
+  // Calculate active stock in TONs (convert KG to TON, ignore LITER)
+  let activeStockTon = 0;
+  allMyMaterials.forEach((m) => {
+    if (m.status === "ACTIVE") {
+      if (m.unit === "TON") {
+        activeStockTon += m.quantity;
+      } else if (m.unit === "KG") {
+        activeStockTon += m.quantity / 1000;
+      }
+    }
+  });
+
+  const totalProducts = allMyMaterials.length;
+  const pendingCount = allMyMaterials.filter((m) => m.status === "PENDING_REVIEW").length;
 
   return {
     data: materials,
@@ -195,6 +224,12 @@ const listMyMaterials = async (userId, query) => {
       limit: take,
       total,
       totalPages: Math.ceil(total / take)
+    },
+    stats: {
+      totalProducts,
+      activeStockTon,
+      pendingCount,
+      soldCount
     }
   };
 };

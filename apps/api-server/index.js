@@ -1,4 +1,12 @@
-require("dotenv").config();
+const path = require("path");
+const fs = require("fs");
+
+const localEnvPath = path.resolve(__dirname, ".env");
+if (fs.existsSync(localEnvPath)) {
+  require("dotenv").config({ path: localEnvPath });
+} else {
+  require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
+}
 const express = require("express");
 const cors = require("cors");
 const { attachUser } = require("./middlewares/auth");

@@ -33,84 +33,96 @@ const createTransaction = async (userId, data) => {
     throw err;
   }
 
-  // Fetch all materials and validate
-  const materialIds = items.map((i) => i.materialId);
-  const materials = await prisma.material.findMany({
-    where: { id: { in: materialIds }, status: "ACTIVE" },
-    include: { distributor: { select: { id: true } } }
-  });
+  // Create transaction and update material stock inside a Prisma transaction
+  const transaction = await prisma.$transaction(async (tx) => {
+    // Fetch all materials and validate
+    const materialIds = items.map((i) => i.materialId);
+    const materials = await tx.material.findMany({
+      where: { id: { in: materialIds }, status: "ACTIVE" },
+      include: { distributor: { select: { id: true } } }
+    });
 
-  if (materials.length !== materialIds.length) {
-    const err = new Error("One or more materials not found or not active");
-    err.statusCode = 400;
-    throw err;
-  }
-
-  // All items must be from the same distributor
-  const distributorIds = [...new Set(materials.map((m) => m.distributor.id))];
-  if (distributorIds.length > 1) {
-    const err = new Error("All items in a transaction must be from the same distributor");
-    err.statusCode = 400;
-    throw err;
-  }
-
-  const distributorId = distributorIds[0];
-
-  // Build transaction items with calculated subtotals
-  const materialMap = {};
-  for (const m of materials) {
-    materialMap[m.id] = m;
-  }
-
-  let totalAmount = 0;
-  const transactionItems = items.map((item) => {
-    const mat = materialMap[item.materialId];
-    const qty = parseFloat(item.quantity);
-
-    if (qty <= 0) {
-      const err = new Error(`Quantity must be positive for material ${mat.title}`);
+    if (materials.length !== materialIds.length) {
+      const err = new Error("One or more materials not found or not active");
       err.statusCode = 400;
       throw err;
     }
 
-    if (qty > mat.quantity) {
-      const err = new Error(`Requested quantity (${qty}) exceeds available stock (${mat.quantity}) for ${mat.title}`);
+    // All items must be from the same distributor
+    const distributorIds = [...new Set(materials.map((m) => m.distributor.id))];
+    if (distributorIds.length > 1) {
+      const err = new Error("All items in a transaction must be from the same distributor");
       err.statusCode = 400;
       throw err;
     }
 
-    const subtotal = qty * mat.price;
-    totalAmount += subtotal;
+    const distributorId = distributorIds[0];
 
-    return {
-      materialId: item.materialId,
-      quantity: qty,
-      unitPrice: mat.price,
-      subtotal
-    };
-  });
+    const materialMap = {};
+    for (const m of materials) {
+      materialMap[m.id] = m;
+    }
 
-  // Create transaction with items in a single Prisma transaction
-  const transaction = await prisma.transaction.create({
-    data: {
-      consumerId,
-      distributorId,
-      totalAmount,
-      shippingAddress: shippingAddress || null,
-      items: {
-        create: transactionItems
+    let totalAmount = 0;
+    const transactionItems = [];
+
+    for (const item of items) {
+      const mat = materialMap[item.materialId];
+      const qty = parseFloat(item.quantity);
+
+      if (qty <= 0) {
+        const err = new Error(`Quantity must be positive for material ${mat.title}`);
+        err.statusCode = 400;
+        throw err;
       }
-    },
-    include: {
-      items: { include: { material: { select: { id: true, title: true, unit: true } } } },
-      consumer: { select: { id: true, companyName: true } },
-      distributor: { select: { id: true, companyName: true, userId: true } }
+
+      if (qty > mat.quantity) {
+        const err = new Error(`Requested quantity (${qty}) exceeds available stock (${mat.quantity}) for ${mat.title}`);
+        err.statusCode = 400;
+        throw err;
+      }
+
+      // Decrement the material quantity
+      const newQty = mat.quantity - qty;
+      await tx.material.update({
+        where: { id: mat.id },
+        data: { quantity: newQty }
+      });
+
+      const subtotal = qty * mat.price;
+      totalAmount += subtotal;
+
+      transactionItems.push({
+        materialId: item.materialId,
+        quantity: qty,
+        unitPrice: mat.price,
+        subtotal
+      });
     }
+
+    // Create transaction with items
+    return tx.transaction.create({
+      data: {
+        consumerId,
+        distributorId,
+        totalAmount,
+        shippingAddress: shippingAddress || null,
+        items: {
+          create: transactionItems
+        }
+      },
+      include: {
+        items: { include: { material: { select: { id: true, title: true, unit: true } } } },
+        consumer: { select: { id: true, companyName: true } },
+        distributor: { select: { id: true, companyName: true, userId: true } }
+      }
+    });
   });
 
   // Notify distributor of a new incoming order
   const distUser = transaction.distributor?.userId;
   if (distUser) {
+    const totalAmount = transaction.totalAmount;
     notifyDistributor(
       distUser,
       "order_new",
@@ -358,15 +370,13 @@ const confirmReceived = async (transactionId, userId) => {
   });
 };
 
-/**
- * Cancel a transaction (before COMPLETED, by either party).
- */
 const cancelTransaction = async (transactionId, userId) => {
   const transaction = await prisma.transaction.findUnique({
     where: { id: transactionId },
     include: {
       consumer: { select: { userId: true } },
-      distributor: { select: { userId: true } }
+      distributor: { select: { userId: true } },
+      items: true
     }
   });
 
@@ -389,9 +399,25 @@ const cancelTransaction = async (transactionId, userId) => {
     throw err;
   }
 
-  return prisma.transaction.update({
-    where: { id: transactionId },
-    data: { status: "CANCELLED" }
+  return prisma.$transaction(async (tx) => {
+    // Restore material stock
+    for (const item of transaction.items) {
+      if (item.materialId) {
+        await tx.material.update({
+          where: { id: item.materialId },
+          data: {
+            quantity: {
+              increment: item.quantity
+            }
+          }
+        });
+      }
+    }
+
+    return tx.transaction.update({
+      where: { id: transactionId },
+      data: { status: "CANCELLED" }
+    });
   });
 };
 

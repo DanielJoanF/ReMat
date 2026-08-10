@@ -61,6 +61,12 @@ interface MaterialsResponse {
     limit: number;
     totalPages: number;
   };
+  stats?: {
+    totalProducts: number;
+    activeStockTon: number;
+    pendingCount: number;
+    soldCount: number;
+  };
 }
 
 // ─── Empty fallback (no mock data — always render from API) ─────────────
@@ -147,6 +153,12 @@ function MaterialsPageInner() {
   const [selectedCategory, setSelectedCategory] = useState('Semua Kategori');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('Semua Status');
   const [activeUnitTab, setActiveUnitTab] = useState<'KG' | 'TON' | 'LITER'>('KG');
+  const [stats, setStats] = useState<MaterialsResponse['stats']>({
+    totalProducts: 0,
+    activeStockTon: 0,
+    pendingCount: 0,
+    soldCount: 0,
+  });
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; material: Material | null }>({
@@ -165,6 +177,9 @@ function MaterialsPageInner() {
       setMaterials(result.data ?? EMPTY_MATERIALS);
       setTotalItems(result.pagination?.total ?? 0);
       setTotalPages(result.pagination?.totalPages ?? 1);
+      if (result.stats) {
+        setStats(result.stats);
+      }
     } catch (error: unknown) {
       setMaterials(EMPTY_MATERIALS);
       setTotalItems(0);
@@ -256,13 +271,11 @@ function MaterialsPageInner() {
     return true;
   });
 
-  // ── Derived KPI values (from API data, never hardcoded) ──────────────
-  const totalProducts = totalItems;
-  const activeStockTon = materials
-    .filter((m) => m.status === 'ACTIVE')
-    .reduce((sum, m) => sum + m.quantity, 0) / 1000;
-  const pendingCount = materials.filter((m) => m.status === 'PENDING_REVIEW').length;
-  const soldCount = materials.filter((m) => m.quantity === 0 && m.status === 'ACTIVE').length;
+  // ── Derived KPI values (from API stats metadata) ──────────────────
+  const totalProducts = stats?.totalProducts ?? 0;
+  const activeStockTon = stats?.activeStockTon ?? 0;
+  const pendingCount = stats?.pendingCount ?? 0;
+  const soldCount = stats?.soldCount ?? 0;
 
   const kgMaterials = filteredMaterials.filter((item) => item.unit?.toUpperCase() === 'KG');
   const tonMaterials = filteredMaterials.filter((item) => item.unit?.toUpperCase() === 'TON');
@@ -388,19 +401,7 @@ function MaterialsPageInner() {
       <div className="space-y-6">
 
         {/* ── Page Header ───────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-[20px] lg:text-[24px] font-bold text-[#0B1C30] leading-tight">Inventaris Material</h1>
-            <p className="text-[13px] text-gray-500 mt-0.5">
-              Kelola stok material daur ulang Anda.
-            </p>
-          </div>
-          <Link href="/materials/create">
-            <button className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-[13px] font-semibold text-white bg-primary hover:bg-[#2E7D32] shadow-sm transition-all active:scale-95">
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              Tambah Material
-            </button>
-          </Link>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">         
         </div>
 
                 {/* ── Top 4 KPI Cards (Bento Grid) ────────────────────── */}
