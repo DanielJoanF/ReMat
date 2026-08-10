@@ -4,13 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Package, User, CreditCard, Truck, Check, Clock, Ban, AlertCircle,
+  ArrowLeft, Package, User, CreditCard, Check, Clock, Ban, AlertCircle,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { OrderStatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { SkeletonText } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
@@ -96,10 +95,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [shipOpen, setShipOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [trackingNumber, setTrackingNumber] = useState('');
-  const [trackingError, setTrackingError] = useState('');
 
   const fetchOrder = useCallback(async () => {
       if (!orderId) return;
@@ -126,17 +122,6 @@ export default function OrderDetailPage() {
     if (!order) return; setActionLoading(true);
     try { await patchData(`/transactions/${order.id}/confirm`); toast({ type: 'success', message: 'Pesanan berhasil dikonfirmasi.' }); fetchOrder(); }
     catch (e: unknown) { handleApiError(e, toast, 'Gagal mengkonfirmasi pesanan'); }
-    finally { setActionLoading(false); }
-  };
-  const handleShip = async () => {
-    if (!order) return;
-    if (!trackingNumber.trim()) { setTrackingError('Nomor resi wajib diisi'); return; }
-    setActionLoading(true);
-    try {
-      await patchData(`/transactions/${order.id}/ship`, { trackingNumber: trackingNumber.trim() });
-      toast({ type: 'success', message: 'Pesanan berhasil dikirim.' });
-      setShipOpen(false); setTrackingNumber(''); fetchOrder();
-    } catch (e: unknown) { handleApiError(e, toast, 'Gagal mengirim pesanan'); }
     finally { setActionLoading(false); }
   };
   const handleCancel = async () => {
@@ -301,17 +286,7 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
-              {order.trackingNumber && (
-                <div className="pt-5">
-                  <div className="flex items-center gap-3">
-                    <Truck className="w-5 h-5 text-[#2E7D32]" />
-                    <div>
-                      <p className="text-xs text-gray-500">Nomor Resi</p>
-                      <p className="text-sm font-mono font-medium text-gray-900">{order.trackingNumber}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               <div className="pt-5 space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -328,18 +303,7 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      <Modal isOpen={shipOpen} onClose={() => setShipOpen(false)} title="Kirim Pesanan" size="sm">
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">Masukkan nomor resi pengiriman untuk pesanan ini.</p>
-          <Input label="Nomor Resi" required placeholder="Contoh: JNE123456789" value={trackingNumber}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError(''); }}
-            error={trackingError} />
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setShipOpen(false)} disabled={actionLoading}>Batal</Button>
-            <Button variant="primary" onClick={handleShip} loading={actionLoading}>Kirim</Button>
-          </div>
-        </div>
-      </Modal>
+
 
       <Modal isOpen={cancelOpen} onClose={() => setCancelOpen(false)} title="Batalkan Pesanan" size="sm">
         <div className="space-y-4">

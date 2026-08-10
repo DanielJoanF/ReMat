@@ -297,12 +297,6 @@ export default function TransactionDetailPage() {
     setShowQrisModal(true);
   };
 
-  const copyAwb = () => {
-    navigator.clipboard.writeText(transaction.tracking?.awbNumber || "");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
       {/* Header */}
