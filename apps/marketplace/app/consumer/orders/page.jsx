@@ -11,7 +11,6 @@ import {
   Truck,
   CreditCard,
   XCircle,
-  Star,
   Loader2,
   AlertCircle,
   ShoppingBag,
@@ -56,7 +55,6 @@ function normalizeOrder(tx) {
       unit: item.material?.unit?.toLowerCase() || item.unit || "kg",
       unitPrice: item.unitPrice,
     })),
-    rating: tx.rating?.score ?? null,
   };
 }
 
@@ -252,20 +250,6 @@ function OrdersContent() {
                 >
                   Lihat Detail <ChevronRight className="w-4 h-4" />
                 </Link>
-                {order.status === "completed" && !order.rating && (
-                  <Link
-                    href={`/consumer/orders/${order.id}/rate`}
-                    id={`order-rate-${order.id}`}
-                    className="btn-primary text-sm gap-2"
-                  >
-                    <Star className="w-4 h-4" /> Beri Rating
-                  </Link>
-                )}
-                {order.status === "completed" && order.rating && (
-                  <span className="flex items-center gap-1 text-sm text-amber-500 font-medium">
-                    {Array.from({ length: order.rating }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
-                  </span>
-                )}
               </div>
             </div>
           ))}

@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   XCircle,
   Truck,
-  Star,
   AlertCircle,
   Copy,
   Clock,
@@ -415,13 +414,9 @@ export default function TransactionDetailPage() {
               </button>
             )}
             {status === "completed" && (
-              <Link
-                href={`/consumer/orders/${transaction.id}/rate`}
-                id="rate-btn"
-                className="btn-outline gap-2 flex items-center"
-              >
-                <Star className="w-4 h-4" /> Beri Penilaian
-              </Link>
+              <span className="flex items-center gap-2 text-sm text-gray-500">
+                <CheckCircle2 className="w-4 h-4 text-remat-green" /> Pesanan selesai
+              </span>
             )}
             {canCancel && (
               <button

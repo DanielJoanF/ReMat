@@ -109,8 +109,6 @@ export const api = {
   getTransactionById: (id) => request(`/transactions/${id}`).then(parseEnvelope),
   receiveOrder: (id) => request(`/transactions/${id}/receive`, { method: "PATCH" }).then(parseEnvelope),
   cancelOrder: (id) => request(`/transactions/${id}/cancel`, { method: "PATCH" }).then(parseEnvelope),
-  rateTransaction: (id, data) =>
-    request(`/transactions/${id}/rate`, { method: "POST", body: JSON.stringify(data) }).then(parseEnvelope),
 
   // Chat
   sendChatMessage: (data) =>
