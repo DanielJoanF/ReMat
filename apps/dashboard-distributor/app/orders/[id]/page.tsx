@@ -208,8 +208,7 @@ export default function OrderDetailPage() {
                 <h1 className="text-2xl font-bold text-gray-900">Detail Pesanan</h1>
                 <p className="text-sm text-gray-500">ID: {order.id}</p>
               </div>
-            </div>
-            <OrderStatusBadge status={order.status} className="text-sm px-4 py-1.5" />
+            </div>            
           </div>
         </div>
 

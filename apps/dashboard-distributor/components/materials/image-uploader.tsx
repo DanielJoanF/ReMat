@@ -51,6 +51,10 @@ export function ImageUploader({ materialId, photos = [], onChange }: ImageUpload
 
   const handlePick = async (file: File | undefined) => {
     if (!file) return;
+    if ((photos ?? []).length >= 1) {
+      toast({ type: 'warning', message: 'Hanya dapat mengupload maksimal 1 foto.' });
+      return;
+    }
     if (!ACCEPTED_TYPES.includes(file.type)) {
       toast({ type: 'warning', message: 'Format foto tidak didukung. Gunakan JPG, PNG, atau WebP.' });
       return;
@@ -105,7 +109,7 @@ export function ImageUploader({ materialId, photos = [], onChange }: ImageUpload
         >
           <Upload className="mb-2 h-8 w-8 text-gray-400" />
           <p className="text-sm font-medium text-gray-700">Klik untuk memilih foto</p>
-          <p className="mt-1 text-xs text-gray-500">JPG, PNG, WebP - Maks 10MB per foto</p>
+          <p className="mt-1 text-xs text-gray-500">JPG, PNG, WebP - Maks 10MB, maksimal 1 foto</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
@@ -136,7 +140,7 @@ export function ImageUploader({ materialId, photos = [], onChange }: ImageUpload
             </div>
           )}
 
-          {!uploading && (
+          {!uploading && (photos ?? []).length < 1 && (
             <div
               onClick={() => fileInputRef.current?.click()}
               className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed aspect-square border-gray-300 hover:border-primary-400 hover:bg-gray-50"

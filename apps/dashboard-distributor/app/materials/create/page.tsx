@@ -67,6 +67,10 @@ export default function CreateMaterialPage() {
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<MaterialFormData>({
     resolver: zodResolver(materialSchema),
+    defaultValues: {
+      grade: 'A',
+      unit: 'KG',
+    },
   });
 
   useEffect(() => {
@@ -79,13 +83,17 @@ export default function CreateMaterialPage() {
     const fetchCategories = async () => {
       try {
         const response = await getData<{ data: Category[] }>('/categories');
-        setCategories(response.data || []);
+        const cats = response.data || [];
+        setCategories(cats);
+        if (cats.length > 0) {
+          setValue('kategori', cats[0].id);
+        }
       } catch {
         toast({ type: 'error', message: 'Gagal memuat kategori' });
       }
     };
     fetchCategories();
-  }, [isReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isReady, setValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name || c.label || '' }));
 

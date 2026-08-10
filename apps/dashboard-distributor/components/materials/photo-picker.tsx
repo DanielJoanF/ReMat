@@ -5,7 +5,7 @@ import { Upload, Image as ImageIcon, X } from 'lucide-react';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 
-const MAX_PHOTOS = 5;
+const MAX_PHOTOS = 1;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const ACCEPTED_EXT = '.jpg,.jpeg,.png,.webp';
@@ -89,7 +89,7 @@ export function PhotoPicker({
         >
           <Upload className="mb-2 h-8 w-8 text-gray-400" />
           <p className="text-sm font-medium text-gray-700">Klik untuk memilih foto</p>
-          <p className="mt-1 text-xs text-gray-500">JPG, PNG, WebP - Maks 10MB, hingga {MAX_PHOTOS} foto</p>
+          <p className="mt-1 text-xs text-gray-500">JPG, PNG, WebP - Maks 10MB, maksimal {MAX_PHOTOS} foto</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
@@ -127,7 +127,6 @@ export function PhotoPicker({
         ref={inputRef}
         type="file"
         accept={ACCEPTED_EXT}
-        multiple
         className="hidden"
         onChange={(e) => add(e.target.files)}
       />
