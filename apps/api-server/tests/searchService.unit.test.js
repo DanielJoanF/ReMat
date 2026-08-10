@@ -40,10 +40,10 @@ vi.mock("@remat/ai-core", () => ({
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-const makeRow = (similarity) => ({
+const makeRow = (score = 0.5, title = "Material Ummi", rawLexicalRank = 0) => ({
   id: "mat-1",
-  title: "Besi Beton",
-  description: "Material besi",
+  title,
+  description: "Material deskripsi umum",
   materialCode: "BB-001",
   qualityGrade: "A",
   quantity: 100,
@@ -56,13 +56,14 @@ const makeRow = (similarity) => ({
   status: "ACTIVE",
   createdAt: new Date(),
   categoryId: "cat-1",
-  categoryName: "Logam",
-  categorySlug: "logam",
+  categoryName: "Lainnya",
+  categorySlug: "lainnya",
   distributorId: "dist-1",
-  distributorName: "PT. Besi Jaya",
+  distributorName: "PT. Jaya",
   distributorCity: "Jakarta",
   distributorVerified: true,
-  similarity
+  semanticScore: score,
+  rawLexicalRank
 });
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
@@ -104,7 +105,7 @@ describe("searchService — SIMILARITY_THRESHOLD hard cutoff", () => {
 
   // ── 3. Exactly at threshold is accepted ────────────────────────────────────
   it("returns results when top score equals threshold exactly", async () => {
-    mockDb.$queryRawUnsafe.mockResolvedValue([makeRow(SIMILARITY_THRESHOLD)]);
+    mockDb.$queryRawUnsafe.mockResolvedValue([makeRow(SIMILARITY_THRESHOLD, "Besi Beton")]);
 
     const result = await smartSearch("besi beton");
 
@@ -115,7 +116,7 @@ describe("searchService — SIMILARITY_THRESHOLD hard cutoff", () => {
   // ── 4. Above threshold is accepted ─────────────────────────────────────────
   it("returns results when top score is above threshold", async () => {
     const highScore = Math.min(SIMILARITY_THRESHOLD + 0.15, 1.0);
-    mockDb.$queryRawUnsafe.mockResolvedValue([makeRow(highScore)]);
+    mockDb.$queryRawUnsafe.mockResolvedValue([makeRow(highScore, "Besi Beton")]);
 
     const result = await smartSearch("besi beton");
 
@@ -124,16 +125,16 @@ describe("searchService — SIMILARITY_THRESHOLD hard cutoff", () => {
     expect(result.showAlert).toBeUndefined();
   });
 
-  // ── 5. SIMILARITY_THRESHOLD is passed as $2 to the raw SQL ─────────────────
-  it("passes SIMILARITY_THRESHOLD as the $2 param in the raw SQL call", async () => {
+  // ── 5. queryText is passed as $2 to raw SQL ──────────────────────────────
+  it("passes queryText as $2 parameter to raw SQL", async () => {
     mockDb.$queryRawUnsafe.mockResolvedValue([makeRow(SIMILARITY_THRESHOLD + 0.1)]);
 
     await smartSearch("besi");
 
     expect(mockDb.$queryRawUnsafe).toHaveBeenCalledTimes(1);
     const callArgs = mockDb.$queryRawUnsafe.mock.calls[0];
-    // callArgs[0]=sql, callArgs[1]=vectorStr, callArgs[2]=threshold, callArgs[3]=limit
-    expect(callArgs[2]).toBe(SIMILARITY_THRESHOLD);
+    // callArgs[0]=sql, callArgs[1]=vectorStr, callArgs[2]=queryText, callArgs[3]=recallThreshold
+    expect(callArgs[2]).toBe("besi");
   });
 
   // ── 6. Multi-row noise — all below threshold → empty ──────────────────────

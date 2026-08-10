@@ -23,8 +23,16 @@ const SIMILARITY_THRESHOLD = parseFloat(process.env.SIMILARITY_THRESHOLD ?? "0.4
 const DEFAULT_LIMIT = 10;
 
 /**
- * Perform semantic vector search using pgvector cosine similarity.
- * Falls back to keyword search if embedding API is unavailable.
+ * Perform hybrid search combining PostgreSQL tsvector/tsquery (lexical)
+ * and pgvector cosine similarity (semantic).
+ *
+ * Scoring Formula (ARCHITECTURE.md §3.1 & Phase 3.3):
+ *   finalScore = (lexicalScore * wLexical) + (semanticScore * wSemantic) + categoryIntentBoost
+ *
+ * Short Query Rule (1 word):
+ *   wLexical = 0.7, wSemantic = 0.3 (lexical match priority to eliminate semantic noise)
+ * Multi-word Query:
+ *   wLexical = 0.4, wSemantic = 0.6
  *
  * @param {string} queryText - User's search query
  * @param {object} filters - Optional filters { categoryId, location, limit }
@@ -34,19 +42,50 @@ const smartSearch = async (queryText, filters = {}) => {
   const { categoryId, location, limit = DEFAULT_LIMIT } = filters;
   const take = Math.min(parseInt(limit) || DEFAULT_LIMIT, 50);
 
-  // Try AI-powered semantic search first
+  const queryWords = (queryText || "")
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (queryWords.length === 0) {
+    return { data: [], searchType: "hybrid", total: 0 };
+  }
+
+  // Short query special handling (single word)
+  const isShortQuery = queryWords.length <= 1;
+  const weightLexical = isShortQuery ? 0.7 : 0.4;
+  const weightSemantic = isShortQuery ? 0.3 : 0.6;
+
+  // Try AI-powered hybrid search
   try {
     if (!isEmbeddingAvailable()) {
       throw new Error("Embedding API not configured");
     }
 
+    // Fetch categories for category intent re-ranking
+    let categories = [];
+    try {
+      if (prisma.category && typeof prisma.category.findMany === "function") {
+        categories = (await prisma.category.findMany({ select: { id: true, name: true, slug: true } })) || [];
+      }
+    } catch (e) {
+      categories = [];
+    }
+
+    const matchedCategoryIds = categories
+      .filter((c) =>
+        queryWords.some((w) => c.name.toLowerCase().includes(w) || c.slug.toLowerCase().includes(w))
+      )
+      .map((c) => c.id);
+
     const { embedding } = await generateEmbedding(queryText);
     const vectorStr = `[${embedding.join(",")}]`;
 
-    // Build WHERE clauses for additional filters
+    // SQL query params: $1 = vectorStr, $2 = queryText, $3 = minimum semantic threshold for recall
+    const params = [vectorStr, queryText, 0.25];
+    let paramIdx = 4;
     let extraWhere = "";
-    const params = [vectorStr, SIMILARITY_THRESHOLD, take];
-    let paramIdx = 4; // $1=vector, $2=threshold, $3=limit
 
     if (categoryId) {
       extraWhere += ` AND m.category_id = $${paramIdx}`;
@@ -60,7 +99,7 @@ const smartSearch = async (queryText, filters = {}) => {
       paramIdx++;
     }
 
-    // Raw SQL: cosine similarity search with JOIN to materials
+    // Raw SQL: Hybrid PostgreSQL Full-Text Search (tsvector/tsquery) + pgvector Cosine Similarity
     const sql = `
       SELECT
         m.id,
@@ -84,29 +123,64 @@ const smartSearch = async (queryText, filters = {}) => {
         dp.company_name AS "distributorName",
         dp.city AS "distributorCity",
         dp.is_verified AS "distributorVerified",
-        1 - (me.embedding <=> $1::vector) AS similarity
-      FROM material_embeddings me
-      INNER JOIN materials m ON m.id = me.material_id
+        COALESCE(1 - (me.embedding <=> $1::vector), 0) AS "semanticScore",
+        ts_rank(
+          to_tsvector('simple', COALESCE(m.title, '') || ' ' || COALESCE(m.description, '') || ' ' || COALESCE(c.name, '')),
+          plainto_tsquery('simple', $2)
+        ) AS "rawLexicalRank"
+      FROM materials m
       INNER JOIN categories c ON c.id = m.category_id
       INNER JOIN distributor_profiles dp ON dp.id = m.distributor_id
+      LEFT JOIN material_embeddings me ON me.material_id = m.id AND (me.status IS NULL OR me.status = 'success') AND me.embedding IS NOT NULL
       WHERE m.status = 'ACTIVE'
-        AND (me.status IS NULL OR me.status = 'success')
-        AND me.embedding IS NOT NULL
-        AND 1 - (me.embedding <=> $1::vector) >= $2
+        AND (
+          (me.embedding IS NOT NULL AND 1 - (me.embedding <=> $1::vector) >= $3)
+          OR
+          to_tsvector('simple', COALESCE(m.title, '') || ' ' || COALESCE(m.description, '') || ' ' || COALESCE(c.name, '')) @@ plainto_tsquery('simple', $2)
+        )
         ${extraWhere}
-      ORDER BY similarity DESC
-      LIMIT $3
     `;
 
     const results = await prisma.$queryRawUnsafe(sql, ...params);
 
-    // Hard cutoff: even if the SQL WHERE already filters, enforce the threshold
-    // at the application layer as defense-in-depth. The top result (already
-    // ORDER BY similarity DESC) determines relevance for the entire response.
-    const topScore = results.length > 0 ? Number(results[0].similarity) : 0;
-    if (results.length === 0 || topScore < SIMILARITY_THRESHOLD) {
+    // Hybrid Re-ranking & Score Fusion
+    const scoredCandidates = results.map((r) => {
+      const semScore = Number(r.semanticScore ?? r.similarity ?? 0);
+      const rawLex = Number(r.rawLexicalRank ?? r.lexicalScore ?? 0);
+
+      // Normalize lexical score: ts_rank scaling + exact title token match bonus
+      let lexScore = Math.min(rawLex * 5.0, 1.0);
+      const titleLower = (r.title || "").toLowerCase();
+
+      // Bonus if title contains exact query word boundary match
+      if (queryWords.some((w) => new RegExp(`\\b${w}\\b`, "i").test(titleLower))) {
+        lexScore = Math.max(lexScore, 0.7) + 0.2;
+      }
+      lexScore = Math.min(lexScore, 1.0);
+
+      // Base hybrid score
+      let finalScore = (lexScore * weightLexical) + (semScore * weightSemantic);
+
+      // Category Intent Re-ranking boost (+0.15)
+      if (matchedCategoryIds.includes(r.categoryId)) {
+        finalScore += 0.15;
+      }
+
+      return {
+        ...r,
+        semanticScore: Number(semScore.toFixed(4)),
+        lexicalScore: Number(lexScore.toFixed(4)),
+        finalScore: Number(finalScore.toFixed(4))
+      };
+    });
+
+    // Hard cutoff: filter candidates below SIMILARITY_THRESHOLD
+    const validResults = scoredCandidates.filter((r) => r.finalScore >= SIMILARITY_THRESHOLD);
+    validResults.sort((a, b) => b.finalScore - a.finalScore);
+
+    if (validResults.length === 0) {
       console.log(
-        `[Search] No relevant results for "${queryText}" (top score: ${topScore.toFixed(4)}, threshold: ${SIMILARITY_THRESHOLD}). Returning empty.`
+        `[Search] No relevant results for "${queryText}" (threshold: ${SIMILARITY_THRESHOLD}). Returning empty.`
       );
       return {
         data: [],
@@ -116,8 +190,10 @@ const smartSearch = async (queryText, filters = {}) => {
       };
     }
 
+    const limited = validResults.slice(0, take);
+
     // Format results
-    const formatted = results.map((r) => ({
+    const formatted = limited.map((r) => ({
       id: r.id,
       title: r.title,
       description: r.description,
@@ -132,7 +208,7 @@ const smartSearch = async (queryText, filters = {}) => {
       longitude: r.longitude ? Number(r.longitude) : null,
       status: r.status,
       createdAt: r.createdAt,
-      similarity: Number(Number(r.similarity).toFixed(4)),
+      similarity: r.finalScore,
       category: {
         id: r.categoryId,
         name: r.categoryName,
