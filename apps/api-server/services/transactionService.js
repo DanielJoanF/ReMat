@@ -223,8 +223,7 @@ const getTransactionById = async (id, user) => {
       items: { include: { material: { select: { id: true, title: true, unit: true, materialCode: true } } } },
       consumer: { select: { id: true, companyName: true, userId: true, user: { select: { name: true } } } },
       distributor: { select: { id: true, companyName: true, userId: true, user: { select: { phone: true } } } },
-      payment: true,
-      rating: true
+      payment: true
     }
   });
 

@@ -9,7 +9,6 @@ import {
   MapPin,
   Package,
   FileText,
-  Star,
   ChevronLeft,
   Phone,
   Plus,
@@ -256,8 +255,7 @@ export default function MaterialDetailPage() {
             status: dbMat.status?.toLowerCase() || "active",
             distributor: {
               ...dbMat.distributor,
-              rating: dbMat.distributor?.rating || 4.8,
-              totalTransactions: dbMat.distributor?.totalTransactions || 120,
+              totalTransactions: dbMat.distributor?.totalTransactions !== undefined && dbMat.distributor?.totalTransactions !== null ? dbMat.distributor.totalTransactions : 0,
               phone: dbMat.distributor?.user?.phone || null,
             },
             documents: (dbMat.documents || []).map((doc, idx) => ({
@@ -378,7 +376,8 @@ export default function MaterialDetailPage() {
                   </div>
                   <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{material.distributor.city}</span>
-                    <span className="flex items-center gap-1"><Star className="w-3 h-3 text-amber-400" />{material.distributor.rating} ({material.distributor.totalTransactions} transaksi)</span>
+                    <span>•</span>
+                    <span>{material.distributor.totalTransactions} transaksi</span>
                   </div>
                 </div>
               </div>

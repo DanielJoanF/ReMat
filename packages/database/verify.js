@@ -14,7 +14,6 @@ async function verifyModels() {
     "transaction",
     "transactionItem",
     "payment",
-    "rating",
     "circularReport",
     "chatConversation",
     "chatMessage",
@@ -28,11 +27,11 @@ async function verifyModels() {
     }
   }
 
-  console.log(`✅ All ${models.length} models from ERD.md & SCHEMA.md exist in Prisma Client!`);
+  console.log(`All ${models.length} models from ERD.md & SCHEMA.md exist in Prisma Client!`);
 }
 
 verifyModels()
   .catch((err) => {
-    console.error("❌ Verification failed:", err);
+    console.error("Verification failed:", err);
     process.exit(1);
   });

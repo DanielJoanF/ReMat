@@ -265,6 +265,20 @@ const getMaterialById = async (id, user) => {
 
   if (!material) return null;
 
+  if (material.distributor) {
+    let transactionCount = 0;
+
+    try {
+      transactionCount = await prisma.transaction.count({
+        where: { distributorId: material.distributor.id }
+      });
+    } catch (err) {
+      console.warn("Failed to count transactions:", err.message);
+    }
+
+    material.distributor.totalTransactions = transactionCount;
+  }
+
   // Public: only ACTIVE
   if (!user) {
     return material.status === "ACTIVE" ? material : null;

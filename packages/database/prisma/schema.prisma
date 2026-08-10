@@ -111,7 +111,6 @@ model DistributorProfile {
   materials      Material[]
   transactions   Transaction[]
   circularReports CircularReport[]
-  ratingsReceived Rating[]
 
   @@map("distributor_profiles")
 }
@@ -130,7 +129,6 @@ model ConsumerProfile {
 
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions  Transaction[]
-  ratingsGiven  Rating[]
   conversations ChatConversation[]
   alerts        MaterialAlert[]
 
@@ -232,7 +230,6 @@ model Transaction {
   distributor DistributorProfile @relation(fields: [distributorId], references: [id])
   items       TransactionItem[]
   payment     Payment?
-  rating      Rating?
 
   @@index([consumerId])
   @@index([distributorId])
@@ -267,23 +264,6 @@ model Payment {
 
   @@map("payments")
 }
-
-model Rating {
-  id             String   @id @default(uuid())
-  transactionId  String   @unique @map("transaction_id")
-  consumerId     String   @map("consumer_id")
-  distributorId  String   @map("distributor_id")
-  score          Int      // 1-5
-  comment        String?
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  transaction Transaction        @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  consumer    ConsumerProfile    @relation(fields: [consumerId], references: [id])
-  distributor DistributorProfile @relation(fields: [distributorId], references: [id])
-
-  @@map("ratings")
-}
-
 // =========================================
 // AI: CIRCULAR REPORT, CHAT, ALERT
 // =========================================

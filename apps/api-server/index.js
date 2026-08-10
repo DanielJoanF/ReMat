@@ -20,7 +20,6 @@ const uploadRoutes = require("./routes/uploads");
 const adminRoutes = require("./routes/admin");
 const transactionRoutes = require("./routes/transactions");
 const paymentRoutes = require("./routes/payments");
-const ratingRoutes = require("./routes/ratings");
 const searchRoutes = require("./routes/search");
 const alertRoutes = require("./routes/alerts");
 const notificationRoutes = require("./routes/notifications");
@@ -51,7 +50,6 @@ app.use("/materials", uploadRoutes); // /materials/:materialId/documents
 app.use("/admin", adminRoutes);
 app.use("/transactions", transactionRoutes);
 app.use("/transactions/:transactionId", paymentRoutes); // /transactions/:transactionId/pay & /payment
-app.use("/transactions/:transactionId", ratingRoutes);  // /transactions/:transactionId/rate & /rating
 app.use("/search", aiLimiter, searchRoutes);
 app.use("/alerts", alertRoutes);
 app.use("/notifications", notificationRoutes);
