@@ -307,7 +307,7 @@ export default function RegisterPage() {
                   required
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Jl. Diponegoro No. 24, Semarang"
+                  placeholder="Jl. Gejayan, No.20, Sleman, Yogyakarta"
                   className="input-base w-full pl-10 h-10.5 border-white/20 bg-white/10 text-white placeholder-white/40 focus:border-remat-green focus:bg-white/15"
                   disabled={isLoading || success}
                 />
