@@ -234,18 +234,28 @@ function MarketplaceContent() {
             <div className="flex gap-2">
               <input
                 id="min-price-filter"
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Min"
                 value={filters.minPrice}
-                onChange={(e) => applyFilters({ ...filters, minPrice: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  applyFilters({ ...filters, minPrice: val });
+                }}
                 className="input-base h-10.5 border-gray-200"
               />
               <input
                 id="max-price-filter"
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Maks"
                 value={filters.maxPrice}
-                onChange={(e) => applyFilters({ ...filters, maxPrice: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  applyFilters({ ...filters, maxPrice: val });
+                }}
                 className="input-base h-10.5 border-gray-200"
               />
             </div>

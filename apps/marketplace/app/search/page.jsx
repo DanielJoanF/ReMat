@@ -153,15 +153,7 @@ function SearchContent() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {results.map((material) => (
-                <div key={material.id} className="relative">
-                  {/* AI Score Badge */}
-                  {searchType === "semantic" && material.score && (
-                    <div className="absolute -top-2 -right-2 z-10 bg-gradient-to-br from-remat-green to-green-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
-                      AI {material.score}%
-                    </div>
-                  )}
-                  <MaterialCard material={material} />
-                </div>
+                <MaterialCard key={material.id} material={material} />
               ))}
             </div>
           </>

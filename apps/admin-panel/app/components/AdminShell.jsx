@@ -73,8 +73,7 @@ export default function AdminShell({ children, onRefresh }) {
         </div>
 
         <div className="flex items-center gap-2 text-xs">
-          <span className="hidden sm:inline-flex bg-emerald-950 text-emerald-400 border border-emerald-800 px-3 py-1 rounded-full font-medium items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+          <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 px-3 py-1 rounded-full font-medium items-center gap-1.5">            
             {adminName}
           </span>
           {onRefresh && (
