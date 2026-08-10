@@ -24,6 +24,9 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreVertical,
+  Scale,
+  Truck,
+  Droplet,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Modal } from '@/components/ui/modal';
@@ -65,6 +68,11 @@ const EMPTY_MATERIALS: Material[] = [];
 
 const CATEGORIES = ['Semua Kategori', 'Plastik', 'Kertas', 'Logam', 'Karet'];
 const STATUSES = ['Semua Status', 'Aktif', 'Menunggu', 'Habis', 'Draft'];
+const UNIT_TABS = [
+  { value: 'KG', label: 'Kilogram' },
+  { value: 'TON', label: 'Ton' },
+  { value: 'LITER', label: 'Liter' },
+] as const;
 
 const PAGE_SIZE = 10;
 
@@ -138,6 +146,7 @@ function MaterialsPageInner() {
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState('Semua Kategori');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('Semua Status');
+  const [activeUnitTab, setActiveUnitTab] = useState<'KG' | 'TON' | 'LITER'>('KG');
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; material: Material | null }>({
@@ -255,6 +264,125 @@ function MaterialsPageInner() {
   const pendingCount = materials.filter((m) => m.status === 'PENDING_REVIEW').length;
   const soldCount = materials.filter((m) => m.quantity === 0 && m.status === 'ACTIVE').length;
 
+  const kgMaterials = filteredMaterials.filter((item) => item.unit?.toUpperCase() === 'KG');
+  const tonMaterials = filteredMaterials.filter((item) => item.unit?.toUpperCase() === 'TON');
+  const literMaterials = filteredMaterials.filter((item) => item.unit?.toUpperCase() === 'LITER');
+
+  const renderMaterialTable = (items: Material[], unitName: string, stockHeader: string, priceHeader: string) => {
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50 border-b border-gray-200 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">
+              <th className="py-3 px-4 w-14">Foto</th>
+              <th className="py-3 px-4">Nama Material</th>
+              <th className="py-3 px-4">Kategori</th>
+              <th className="py-3 px-4 text-center">{stockHeader}</th>
+              <th className="py-3 px-4 text-right">{priceHeader}</th>
+              <th className="py-3 px-4 text-center">Status</th>
+              <th className="py-3 px-4 text-center w-24">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 text-[13px]">
+            {loading ? (
+              Array.from({ length: 2 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="py-2 px-4"><div className="w-9 h-9 bg-gray-100 rounded-md" /></td>
+                  <td className="py-2 px-4"><div className="h-4 w-32 bg-gray-100 rounded" /></td>
+                  <td className="py-2 px-4"><div className="h-4 w-16 bg-gray-100 rounded-sm" /></td>
+                  <td className="py-2 px-4"><div className="h-4 w-10 bg-gray-100 rounded mx-auto" /></td>
+                  <td className="py-2 px-4"><div className="h-4 w-16 bg-gray-100 rounded ml-auto" /></td>
+                  <td className="py-2 px-4"><div className="h-5 w-16 bg-gray-100 rounded-full mx-auto" /></td>
+                  <td className="py-2 px-4"><div className="h-5 w-12 bg-gray-100 rounded mx-auto" /></td>
+                </tr>
+              ))
+            ) : items.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-8 text-center text-gray-400 text-[13px]">
+                  Tidak ada material dengan satuan {unitName}.
+                </td>
+              </tr>
+            ) : (
+              items.map((item) => {
+                const photoUrl = item.documents?.find((d) => d.type === 'PHOTO')?.fileUrl;
+                return (
+                  <tr key={item.id} className="hover:bg-gray-50/70 transition-colors">
+                    {/* Foto */}
+                    <td className="py-3 px-4">
+                      <div className="w-9 h-9 rounded-md bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {photoUrl ? (
+                          <img src={photoUrl} alt={item.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <Package className="w-4 h-4 text-gray-400" />
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Nama Material */}
+                    <td className="py-3 px-4 font-semibold text-[#0B1C30]">
+                      {item.title}
+                    </td>
+
+                    {/* Kategori */}
+                    <td className="py-3 px-4">
+                      <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-semibold bg-[#E8F1FF] text-[#3B82F6]">
+                        {item.category?.name ?? '—'}
+                      </span>
+                    </td>
+
+                    {/* Stok */}
+                    <td className="py-3 px-4 text-center text-gray-600 tabular-nums">
+                      {item.quantity.toLocaleString('id-ID')}
+                    </td>
+
+                    {/* Harga */}
+                    <td className="py-3 px-4 text-right font-semibold text-gray-800 tabular-nums">
+                      {formatCurrency(item.price)}
+                    </td>
+
+                    {/* Status */}
+                    <td className="py-3 px-4 text-center">
+                      <StatusPill status={item.status} stock={item.quantity} />
+                    </td>
+
+                    {/* Aksi */}
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => router.push(`/materials/${item.id}/edit`)}
+                          className="p-1.5 rounded text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteModal({ open: true, material: item })}
+                          className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        {item.status === 'DRAFT' && (
+                          <button
+                            onClick={() => handleSubmitMaterial(item)}
+                            className="p-1.5 rounded text-primary hover:bg-[#E8F5E9] transition-colors"
+                            title="Submit"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -314,228 +442,175 @@ function MaterialsPageInner() {
           </div>
         </div>
 
-        {/* ── Main Inventory Table Card ─────────────────────────── */}
-        <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-sm overflow-hidden">
+        {/* ── Main Inventory Filter/Toolbar Card ────────────────── */}
+        <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-sm p-3 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Search Input */}
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Cari nama material, ID..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-9 pr-8 py-1.5 text-[13px] rounded-md border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-gray-400"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => setSearchInput('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                title="Bersihkan pencarian"
+                aria-label="Bersihkan pencarian"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
-          {/* Toolbar: Search + Dropdown Filters */}
-          <div className="p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-gray-100">
-            {/* Search Input */}
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Cari nama material, ID..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-9 pr-8 py-1.5 text-[13px] rounded-md border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-gray-400"
-              />
-              {searchInput && (
+          {/* Unit Tabs (Segmented Control style) */}
+          <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-full md:w-auto">
+            {UNIT_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveUnitTab(tab.value)}
+                className={`flex-1 md:flex-none px-4 py-1.5 rounded-md text-[12px] font-bold transition-all whitespace-nowrap ${
+                  activeUnitTab === tab.value
+                    ? 'bg-white text-primary shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Dropdowns & Refresh */}
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            {/* Category Dropdown */}
+            <div className="relative">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="appearance-none bg-white border border-gray-200 rounded-md px-3 py-1.5 pr-8 text-[13px] font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* Status Dropdown */}
+            <div className="relative">
+              <select
+                value={selectedStatusFilter}
+                onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                className="appearance-none bg-white border border-gray-200 rounded-md px-3 py-1.5 pr-8 text-[13px] font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer"
+              >
+                {STATUSES.map((st) => (
+                  <option key={st} value={st}>{st}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* Refresh button */}
+            <button
+              onClick={handleRefresh}
+              className="p-1.5 rounded-md border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Material Cards Grouped by Unit (Stack Grid of 1 Column) ── */}
+        <div className="grid grid-cols-1 gap-6">
+          {/* 1. Kilogram Card */}
+          {activeUnitTab === 'KG' && (
+            <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-sm overflow-hidden">
+              <div className="px-4 py-3 bg-gray-50/70 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-[14px] font-bold text-gray-800 flex items-center gap-2">
+                  <Scale className="w-4 h-4 text-primary" /> Material Satuan Kilogram (KG)
+                </h2>
+                <span className="text-[11px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                  {kgMaterials.length} Item
+                </span>
+              </div>
+              {renderMaterialTable(kgMaterials, 'Kilogram (KG)', 'Stok (Kg)', 'Harga / Kg')}
+            </div>
+          )}
+
+          {/* 2. Ton Card */}
+          {activeUnitTab === 'TON' && (
+            <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-sm overflow-hidden">
+              <div className="px-4 py-3 bg-gray-50/70 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-[14px] font-bold text-gray-800 flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-primary" /> Material Satuan Ton (TON)
+                </h2>
+                <span className="text-[11px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                  {tonMaterials.length} Item
+                </span>
+              </div>
+              {renderMaterialTable(tonMaterials, 'Ton (TON)', 'Stok (Ton)', 'Harga / Ton')}
+            </div>
+          )}
+
+          {/* 3. Liter Card */}
+          {activeUnitTab === 'LITER' && (
+            <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-sm overflow-hidden">
+              <div className="px-4 py-3 bg-gray-50/70 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-[14px] font-bold text-gray-800 flex items-center gap-2">
+                  <Droplet className="w-4 h-4 text-primary" /> Material Satuan Liter (LITER)
+                </h2>
+                <span className="text-[11px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                  {literMaterials.length} Item
+                </span>
+              </div>
+              {renderMaterialTable(literMaterials, 'Liter (LITER)', 'Stok (Liter)', 'Harga / Liter')}
+            </div>
+          )}
+        </div>
+
+        {/* ── Pagination Section Card ─────────────────────────── */}
+        <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-sm p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] text-gray-500">
+          <div>
+            Menampilkan <span className="font-semibold text-gray-700">1 - {filteredMaterials.length}</span> dari <span className="font-semibold text-gray-700">{totalItems}</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="w-7 h-7 rounded flex items-center justify-center border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            {Array.from({ length: totalPages }).map((_, idx) => {
+              const pageNum = idx + 1;
+              const isCurrent = pageNum === page;
+              return (
                 <button
-                  type="button"
-                  onClick={() => setSearchInput('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                  title="Bersihkan pencarian"
-                  aria-label="Bersihkan pencarian"
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`w-7 h-7 rounded font-bold flex items-center justify-center transition-all ${
+                    isCurrent
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
                 >
-                  <X className="w-3.5 h-3.5" />
+                  {pageNum}
                 </button>
-              )}
-            </div>
-            {/* Dropdowns */}
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-              {/* Category Dropdown */}
-              <div className="relative">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="appearance-none bg-white border border-gray-200 rounded-md px-3 py-1.5 pr-8 text-[13px] font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer"
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-              </div>
-
-              {/* Status Dropdown */}
-              <div className="relative">
-                <select
-                  value={selectedStatusFilter}
-                  onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                  className="appearance-none bg-white border border-gray-200 rounded-md px-3 py-1.5 pr-8 text-[13px] font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer"
-                >
-                  {STATUSES.map((st) => (
-                    <option key={st} value={st}>{st}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-              </div>
-
-              {/* Refresh button */}
-              <button
-                onClick={handleRefresh}
-                className="p-1.5 rounded-md border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors"
-                title="Refresh"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-gray-200 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">
-                  <th className="py-3 px-4 w-14">Foto</th>
-                  <th className="py-3 px-4">Nama Material</th>
-                  <th className="py-3 px-4">Kategori</th>
-                  <th className="py-3 px-4 text-center">Stok (Ton)</th>
-                  <th className="py-3 px-4 text-right">Harga/kg</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-center w-24">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-[13px]">
-                {loading ? (
-                  Array.from({ length: 4 }).map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="py-2 px-4"><div className="w-9 h-9 bg-gray-100 rounded-md" /></td>
-                      <td className="py-2 px-4"><div className="h-4 w-32 bg-gray-100 rounded" /></td>
-                      <td className="py-2 px-4"><div className="h-4 w-16 bg-gray-100 rounded-sm" /></td>
-                      <td className="py-2 px-4"><div className="h-4 w-10 bg-gray-100 rounded mx-auto" /></td>
-                      <td className="py-2 px-4"><div className="h-4 w-16 bg-gray-100 rounded ml-auto" /></td>
-                      <td className="py-2 px-4"><div className="h-5 w-16 bg-gray-100 rounded-full mx-auto" /></td>
-                      <td className="py-2 px-4"><div className="h-5 w-12 bg-gray-100 rounded mx-auto" /></td>
-                    </tr>
-                  ))
-                ) : filteredMaterials.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-gray-400 text-[13px]">
-                      {debouncedSearch
-                        ? `Tidak ada material yang cocok dengan pencarian "${debouncedSearch}".`
-                        : 'Tidak ada material ditemukan.'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredMaterials.map((item) => {
-                    const stockInTon = ((item.quantity ?? 0) / 1000).toFixed(1);
-                    const photoUrl = item.documents?.find((d) => d.type === 'PHOTO')?.fileUrl;
-                    return (
-                      <tr key={item.id} className="hover:bg-gray-50/70 transition-colors">
-                        {/* Foto */}
-                        <td className="py-3 px-4">
-                          <div className="w-9 h-9 rounded-md bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            {photoUrl ? (
-                              <img src={photoUrl} alt={item.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <Package className="w-4 h-4 text-gray-400" />
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Nama Material */}
-                        <td className="py-3 px-4 font-semibold text-[#0B1C30]">
-                          {item.title}
-                        </td>
-
-                        {/* Kategori */}
-                        <td className="py-3 px-4">
-                          <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-semibold bg-[#E8F1FF] text-[#3B82F6]">
-                            {item.category?.name ?? '—'}
-                          </span>
-                        </td>
-
-                        {/* Stok (Ton) */}
-                        <td className="py-3 px-4 text-center text-gray-600 tabular-nums">
-                          {stockInTon}
-                        </td>
-
-                        {/* Harga/kg */}
-                        <td className="py-3 px-4 text-right font-semibold text-gray-800 tabular-nums">
-                          {formatCurrency(item.price)}
-                        </td>
-
-                        {/* Status */}
-                        <td className="py-3 px-4 text-center">
-                          <StatusPill status={item.status} stock={item.quantity} />
-                        </td>
-
-                        {/* Aksi */}
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => router.push(`/materials/${item.id}/edit`)}
-                              className="p-1.5 rounded text-blue-600 hover:bg-blue-50 transition-colors"
-                              title="Edit"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteModal({ open: true, material: item })}
-                              className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
-                              title="Hapus"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                            {item.status === 'DRAFT' && (
-                              <button
-                                onClick={() => handleSubmitMaterial(item)}
-                                className="p-1.5 rounded text-primary hover:bg-[#E8F5E9] transition-colors"
-                                title="Submit"
-                              >
-                                <Send className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Table Footer & Pagination */}
-          <div className="p-3 sm:p-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] text-gray-500">
-            <div>
-              Menampilkan <span className="font-semibold text-gray-700">1 - {filteredMaterials.length}</span> dari <span className="font-semibold text-gray-700">{totalItems}</span>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="w-7 h-7 rounded flex items-center justify-center border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              {Array.from({ length: totalPages }).map((_, idx) => {
-                const pageNum = idx + 1;
-                const isCurrent = pageNum === page;
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setPage(pageNum)}
-                    className={`w-7 h-7 rounded font-bold flex items-center justify-center transition-all ${
-                      isCurrent
-                        ? 'bg-primary text-white shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              <button
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="w-7 h-7 rounded flex items-center justify-center border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+              );
+            })}
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="w-7 h-7 rounded flex items-center justify-center border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
