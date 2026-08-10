@@ -77,7 +77,11 @@ function QrisPaymentModal({ totalAmount, orderId, distributorPhone, onClose }) {
     `💰 *Total:* ${formatIDR(totalAmount)}\n\n` +
     `Mohon konfirmasi. Terima kasih!`
   );
-  const waNumber = distributorPhone?.replace(/[^0-9]/g, "") || "6281234567890";
+  let cleanPhone = distributorPhone?.replace(/[^0-9]/g, "") || "";
+  if (cleanPhone.startsWith("0")) {
+    cleanPhone = "62" + cleanPhone.slice(1);
+  }
+  const waNumber = cleanPhone || "6281234567890";
   const waUrl = `https://wa.me/${waNumber}?text=${waMessage}`;
 
   return (
@@ -260,9 +264,9 @@ export default function TransactionDetailPage() {
   }
 
   const { status } = transaction;
-  const canCancel = ["pending", "confirmed"].includes(status);
-  const canReceive = status === "shipped";
-  const canPay = status === "pending" || (status === "confirmed" && !transaction.payment);
+  const canCancel = status === "pending";
+  const canReceive = false;
+  const canPay = status === "pending" && !transaction.payment;
 
   const handleReceive = async () => {
     setIsReceiving(true);
@@ -372,7 +376,10 @@ export default function TransactionDetailPage() {
             </div>
             {transaction.distributor.phone && (
               <a
-                href={`https://wa.me/${transaction.distributor.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Halo, saya ingin bertanya tentang pesanan #${transaction.id.slice(0,8)}.`)}`}
+                href={`https://wa.me/${(() => {
+                  let clean = transaction.distributor.phone.replace(/[^0-9]/g, "");
+                  return clean.startsWith("0") ? "62" + clean.slice(1) : clean;
+                })()}?text=${encodeURIComponent(`Halo, saya ingin bertanya tentang pesanan #${transaction.id.slice(0,8)}.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs font-medium text-[#25D366] border border-[#25D366]/30 px-3 py-1.5 rounded-lg hover:bg-[#25D366]/10 transition-colors"

@@ -25,8 +25,8 @@ const createPayment = async (transactionId, userId, data) => {
     throw err;
   }
 
-  if (transaction.status !== "CONFIRMED") {
-    const err = new Error(`Transaction must be in CONFIRMED status to pay. Current status: ${transaction.status}`);
+  if (transaction.status !== "PENDING") {
+    const err = new Error(`Transaction must be in PENDING status to pay. Current status: ${transaction.status}`);
     err.statusCode = 400;
     throw err;
   }
@@ -46,7 +46,7 @@ const createPayment = async (transactionId, userId, data) => {
     throw err;
   }
 
-  // Create payment record and update transaction status to PAID
+  // Create payment record and update transaction status to CONFIRMED
   const [payment] = await prisma.$transaction([
     prisma.payment.create({
       data: {
@@ -60,7 +60,7 @@ const createPayment = async (transactionId, userId, data) => {
     }),
     prisma.transaction.update({
       where: { id: transactionId },
-      data: { status: "PAID" }
+      data: { status: "CONFIRMED" }
     })
   ]);
 

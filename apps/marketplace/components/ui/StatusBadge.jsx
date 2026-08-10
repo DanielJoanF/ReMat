@@ -12,7 +12,7 @@ const STATUS_CONFIG = {
   sold_out: { label: "Habis", bg: "bg-gray-900", text: "text-white", dot: "bg-gray-400" },
 
   // Transaction statuses
-  pending: { label: "Menunggu", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
+  pending: { label: "Dibuat", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
   confirmed: { label: "Dikonfirmasi", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
   paid: { label: "Dibayar", bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-500" },
   shipped: { label: "Dikirim", bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500" },

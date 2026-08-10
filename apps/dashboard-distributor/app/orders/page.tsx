@@ -53,6 +53,7 @@ interface OrderConsumer {
   id?: string;
   companyName?: string;
   email?: string;
+  user?: { name: string };
 }
 
 interface Order {
@@ -80,9 +81,8 @@ const EMPTY_ORDERS: Order[] = [];
 
 const STATUS_TABS = [
   { value: 'SEMUA', label: 'Semua' },
-  { value: 'PENDING', label: 'Menunggu Konfirmasi' },
-  { value: 'PAID', label: 'Diproses' },
-  { value: 'SHIPPED', label: 'Dikirim' },
+  { value: 'PENDING', label: 'Dibuat' },
+  { value: 'CONFIRMED', label: 'Dikonfirmasi' },
   { value: 'COMPLETED', label: 'Selesai' },
   { value: 'CANCELLED', label: 'Dibatalkan' },
 ];
@@ -221,28 +221,27 @@ function OrdersPageInner() {
   // compose instead of overriding each other.
   const filteredOrders = orders.filter((order) => {
     if (activeTab !== 'SEMUA') {
-      if (activeTab === 'PAID' && order.status !== 'PAID' && order.status !== 'CONFIRMED') return false;
-      if (activeTab !== 'PAID' && order.status !== activeTab) return false;
+      return order.status === activeTab;
     }
     return true;
   });
   // ── Derived KPI values (from API data, never hardcoded) ──────────────
   const pendingOrders = orders.filter((o) => o.status === 'PENDING').length;
-  const shippedOrders = orders.filter((o) => o.status === 'SHIPPED').length;
+  const confirmedOrders = orders.filter((o) => o.status === 'CONFIRMED').length;
   const completedOrders = orders.filter((o) => o.status === 'COMPLETED').length;
 
   return (
     <DashboardLayout>
       <div className="space-y-4 lg:space-y-5">
         {/* ── Page Header ───────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        {/* <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-[20px] lg:text-[24px] font-bold text-[#0B1C30] leading-tight">Manajemen Pesanan</h1>
             <p className="text-[13px] text-gray-500 mt-0.5">
               Pantau dan kelola semua transaksi penjualan material Anda.
             </p>
           </div>
-        </div>
+        </div> */}
 
         {/* ── Top KPI Cards (Bento Grid) ──────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -262,13 +261,13 @@ function OrdersPageInner() {
           <div className="bg-[#EFF6FF] rounded-lg shadow-card p-4 border border-blue-100 flex items-center justify-between hover:shadow-card-hover transition-shadow">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Truck className="w-4 h-4 text-blue-600" />
-                <span className="text-[11px] font-bold tracking-wider uppercase text-blue-700">SEDANG DIKIRIM</span>
+                <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                <span className="text-[11px] font-bold tracking-wider uppercase text-blue-700">PESANAN DIKONFIRMASI</span>
               </div>
-              <p className="text-[24px] font-extrabold text-[#0B1C30] tabular-nums">{shippedOrders}</p>
+              <p className="text-[24px] font-extrabold text-[#0B1C30] tabular-nums">{confirmedOrders}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-              <Truck className="w-5 h-5 text-blue-600" />
+              <CheckCircle2 className="w-5 h-5 text-blue-600" />
             </div>
           </div>
 
@@ -380,7 +379,7 @@ function OrdersPageInner() {
                           {order.id.startsWith('#') ? order.id : `#ORD-${order.id.slice(0,4)}`}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-[#0B1C30] whitespace-nowrap">{order.consumer?.companyName || 'Konsumen Umum'}</div>
+                          <div className="font-semibold text-[#0B1C30] whitespace-nowrap">{order.consumer?.user?.name || order.consumer?.companyName || 'Konsumen Umum'}</div>
                           <div className="text-[11px] text-gray-500 mt-0.5">{formatDate(order.createdAt).replace('2023', '23').split(' ').slice(0, 3).join(' ')}</div>
                         </td>
                         <td className="py-3 px-4 text-gray-700 font-medium whitespace-nowrap">
@@ -401,20 +400,12 @@ function OrdersPageInner() {
                             <Link href={`/orders/${order.id.replace(/^#/, '')}`} className="px-2.5 py-1.5 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 text-[11px] font-semibold transition-colors">
                               Detail
                             </Link>
-                            {order.status === 'PENDING' && (
+                            {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
                               <button
                                 onClick={() => setActionModal({ open: true, type: 'CONFIRM', order })}
                                 className="px-2.5 py-1.5 rounded bg-primary text-white text-[11px] font-semibold hover:bg-[#2E7D32] transition-colors"
                               >
-                                Terima
-                              </button>
-                            )}
-                            {order.status === 'PAID' && (
-                              <button
-                                onClick={() => setActionModal({ open: true, type: 'SHIP', order })}
-                                className="px-2.5 py-1.5 rounded border border-primary text-primary text-[11px] font-semibold hover:bg-gray-50 transition-colors"
-                              >
-                                Kirim
+                                Konfirmasi
                               </button>
                             )}
                           </div>
