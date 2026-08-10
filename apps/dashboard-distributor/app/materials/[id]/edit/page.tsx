@@ -31,6 +31,15 @@ const materialSchema = z.object({
 
 type MaterialFormData = z.infer<typeof materialSchema>;
 
+const REGIONS = {
+  'DKI Jakarta': ['Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Barat', 'Jakarta Utara', 'Jakarta Timur'],
+  'Jawa Barat': ['Bandung', 'Bogor', 'Depok', 'Bekasi', 'Cirebon', 'Sukabumi'],
+  'Jawa Tengah': ['Semarang', 'Surakarta', 'Magelang', 'Salatiga', 'Pekalongan', 'Tegal'],
+  'Jawa Timur': ['Surabaya', 'Malang', 'Sidoarjo', 'Gresik', 'Kediri', 'Madiun'],
+  'DI Yogyakarta': ['Yogyakarta', 'Sleman', 'Bantul', 'Kulon Progo', 'Gunungkidul'],
+  'Banten': ['Tangerang', 'Tangerang Selatan', 'Serang', 'Cilegon'],
+};
+
 interface Category { id: string; name: string; }
 interface Material {
   id: string;
@@ -70,6 +79,8 @@ export default function EditMaterialPage() {
   const [material, setMaterial] = useState<Material | null>(null);
   const [photos, setPhotos] = useState<{ id: string; type: string; fileUrl: string }[]>([]);
 
+  const [selectedProvince, setSelectedProvince] = useState<keyof typeof REGIONS>('DKI Jakarta');
+
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<MaterialFormData>({
     resolver: zodResolver(materialSchema),
   });
@@ -88,6 +99,12 @@ export default function EditMaterialPage() {
         setMaterial(mat);
         setPhotos((mat.documents || []).filter((d) => d.type === 'PHOTO'));
         setCategories(catRes.data || []);
+
+        const prov = Object.keys(REGIONS).find((p) =>
+          REGIONS[p as keyof typeof REGIONS].includes(mat.location)
+        ) as keyof typeof REGIONS || 'DKI Jakarta';
+        setSelectedProvince(prov);
+
         reset({
           nama: mat.title, deskripsi: mat.description, kategori: mat.categoryId,
           grade: mat.qualityGrade ?? '', harga: mat.price, unit: mat.unit, stok: mat.quantity, lokasi: mat.location,
@@ -181,7 +198,25 @@ export default function EditMaterialPage() {
                 <Input label="Harga" required type="number" placeholder="0" error={errors.harga?.message} {...register('harga')} />
                 <Select label="Unit" required options={unitOptions} placeholder="Pilih unit" error={errors.unit?.message} value={watch('unit')} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('unit', e.target.value, { shouldValidate: true })} />
                 <Input label="Stok" required type="number" placeholder="0" error={errors.stok?.message} {...register('stok')} />
-                <Input label="Lokasi" required placeholder="Contoh: Jakarta Selatan" error={errors.lokasi?.message} {...register('lokasi')} />
+                <Select
+                  label="Provinsi"
+                  required
+                  options={Object.keys(REGIONS).map((prov) => ({ value: prov, label: prov }))}
+                  value={selectedProvince}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                    const prov = e.target.value as keyof typeof REGIONS;
+                    setSelectedProvince(prov);
+                    setValue('lokasi', REGIONS[prov][0], { shouldValidate: true });
+                  }}
+                />
+                <Select
+                  label="Lokasi (Kota / Kabupaten)"
+                  required
+                  options={REGIONS[selectedProvince].map((city) => ({ value: city, label: city }))}
+                  value={watch('lokasi') || ''}
+                  error={errors.lokasi?.message}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue('lokasi', e.target.value, { shouldValidate: true })}
+                />
               </div>
             </CardContent>
           </Card>

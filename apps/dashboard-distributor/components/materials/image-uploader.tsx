@@ -94,27 +94,59 @@ export function ImageUploader({ materialId, photos = [], onChange }: ImageUpload
 
   return (
     <div className="space-y-4">
-      {/* Dropzone */}
-      <div
-        onClick={() => fileInputRef.current?.click()}
-        className={cn(
-          'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-8 transition-colors',
-          'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
-        )}
-      >
-        {uploading ? (
-          <>
-            <Loader2 className="mb-2 h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm font-medium text-gray-700">Mengupload foto...</p>
-          </>
-        ) : (
-          <>
-            <Upload className="mb-2 h-8 w-8 text-gray-400" />
-            <p className="text-sm font-medium text-gray-700">Klik untuk memilih foto</p>
-            <p className="mt-1 text-xs text-gray-500">JPG, PNG, WebP - Maks 10MB per foto</p>
-          </>
-        )}
-      </div>
+      {/* Dropzone / Preview Grid */}
+      {(photos ?? []).length === 0 && !uploading ? (
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          className={cn(
+            'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-8 transition-colors',
+            'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
+          )}
+        >
+          <Upload className="mb-2 h-8 w-8 text-gray-400" />
+          <p className="text-sm font-medium text-gray-700">Klik untuk memilih foto</p>
+          <p className="mt-1 text-xs text-gray-500">JPG, PNG, WebP - Maks 10MB per foto</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {(photos ?? []).map((photo) => (
+            <div key={photo.id} className="group relative overflow-hidden rounded-lg border border-gray-200 aspect-square">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo.fileUrl} alt="Foto material" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => handleDelete(photo.id)}
+                disabled={deletingId === photo.id}
+                className="absolute right-2 top-2 rounded-md bg-white/90 p-1.5 text-red-600 shadow-md transition-colors hover:bg-red-50 disabled:opacity-50"
+                title="Hapus foto"
+              >
+                {deletingId === photo.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          ))}
+
+          {uploading && (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-gray-200 aspect-square bg-gray-50">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="mt-1 text-xs text-gray-500">Mengupload...</span>
+            </div>
+          )}
+
+          {!uploading && (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed aspect-square border-gray-300 hover:border-primary-400 hover:bg-gray-50"
+            >
+              <Upload className="h-6 w-6 text-gray-400" />
+              <span className="mt-1 text-xs text-gray-500">Tambah Foto</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <input
         ref={fileInputRef}
@@ -125,31 +157,6 @@ export function ImageUploader({ materialId, photos = [], onChange }: ImageUpload
           handlePick(e.target.files?.[0]);
         }}
       />
-
-      {/* Photo list */}
-      {(photos ?? []).length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {photos.map((photo) => (
-            <div key={photo.id} className="group relative overflow-hidden rounded-lg border border-gray-200">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.fileUrl} alt="Foto material" className="h-28 w-full object-cover" />
-              <button
-                type="button"
-                onClick={() => handleDelete(photo.id)}
-                disabled={deletingId === photo.id}
-                className="absolute right-1.5 top-1.5 rounded-md bg-white/90 p-1.5 text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-50"
-                title="Hapus foto"
-              >
-                {deletingId === photo.id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
 
       {pendingPreview && (
         <div className="flex items-center gap-2 text-xs text-gray-500">

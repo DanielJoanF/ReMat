@@ -81,7 +81,7 @@ const { mockDb, mockGenerateEmbedding, mockIsAvailable } = vi.hoisted(() => {
       findMany: vi.fn(),
       findUnique: vi.fn()
     },
-    $transaction: vi.fn((promises) => Promise.all(promises)),
+    $transaction: vi.fn((arg) => typeof arg === "function" ? arg(mock) : Promise.all(arg)),
     $queryRawUnsafe: vi.fn(),
     $executeRawUnsafe: vi.fn()
   };
@@ -177,7 +177,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb.$transaction.mockImplementation((promises) => Promise.all(promises));
+    mockDb.$transaction.mockImplementation((arg) => typeof arg === "function" ? arg(mockDb) : Promise.all(arg));
     global.isEmbeddingAvailableMock = true;
     global.isLlmAvailableMock = true;
     global.generateEmbeddingMock = vi.fn().mockResolvedValue({
