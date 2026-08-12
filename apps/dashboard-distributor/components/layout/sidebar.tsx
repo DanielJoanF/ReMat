@@ -55,7 +55,7 @@ function BrandHeader({ collapsed }: { collapsed: boolean }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" alt="Logo" className="h-12 w-auto" />
       <div>
-        <p className="text-[11px] font-semibold text-[#475569] leading-tight">Distributor Dashboard</p>
+        <p className="text-[11px] font-semibold text-[#475569] leading-tight">Produsen Dashboard</p>
       </div>
     </div>
   );
@@ -69,7 +69,7 @@ export function ProfileCard({ collapsed }: { collapsed: boolean }) {
   // so SSR and hydration produce identical markup.
   if (!isReady) return null;
 
-  const name = user?.name || 'ReMat Distributor';
+  const name = user?.name || 'ReMat Produsen';
   const role = 'Industrial Waste Hub';
 
   if (collapsed) {

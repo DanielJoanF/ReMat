@@ -249,7 +249,7 @@ export default function MaterialDetailPage() {
             ...dbMat,
             quality_grade: dbMat.qualityGrade || "Grade A",
             isVerified: dbMat.distributor?.isVerified || false,
-            distributorName: dbMat.distributor?.companyName || "Distributor",
+            distributorName: dbMat.distributor?.companyName || "Produsen",
             imageUrl: dbMat.documents?.find(doc => doc.type === "PHOTO")?.fileUrl || null,
             unit: dbMat.unit?.toLowerCase() || "kg",
             status: dbMat.status?.toLowerCase() || "active",
@@ -360,7 +360,7 @@ export default function MaterialDetailPage() {
                 </div>
               </div>
 
-              {/* Distributor */}
+              {/* Produsen */}
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-4">
                 <div className="w-10 h-10 bg-remat-green text-white rounded-xl flex items-center justify-center text-sm font-bold">
                   {material.distributor.companyName.charAt(0)}
@@ -495,7 +495,7 @@ export default function MaterialDetailPage() {
                       <button
                         id="beli-btn-disabled"
                         disabled
-                        title={role === "DISTRIBUTOR" ? "Distributor tidak dapat membeli material" : "Material tidak tersedia"}
+                        title={role === "DISTRIBUTOR" ? "Produsen tidak dapat membeli material" : "Material tidak tersedia"}
                         className="btn-primary flex-1 gap-2 opacity-50 cursor-not-allowed"
                       >
                         <ShoppingBag className="w-4 h-4" /> Beli
@@ -505,7 +505,7 @@ export default function MaterialDetailPage() {
                       </button>
                     </div>
                     <p className="text-xs text-center text-gray-400">
-                      {role === "DISTRIBUTOR" ? "Akun Distributor tidak dapat melakukan pembelian" :
+                      {role === "DISTRIBUTOR" ? "Akun Produsen tidak dapat melakukan pembelian" :
                        "Status material tidak tersedia untuk dibeli"}
                     </p>
                   </div>

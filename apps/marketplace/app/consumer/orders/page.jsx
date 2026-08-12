@@ -45,7 +45,7 @@ function normalizeOrder(tx) {
     createdAt: tx.createdAt,
     shippingAddress: tx.shippingAddress || "",
     distributor: {
-      companyName: tx.distributor?.companyName || "Distributor",
+      companyName: tx.distributor?.companyName || "Produsen",
       city: tx.distributor?.city || "",
     },
     items: (tx.items || []).map((item) => ({
@@ -149,7 +149,7 @@ function OrdersContent() {
           <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
           <div>
             <p className="font-semibold text-green-800 text-sm">Pesanan Berhasil Dibuat!</p>
-            <p className="text-green-600 text-xs mt-0.5">Distributor sedang memproses pesanan Anda. Tunggu konfirmasi selanjutnya.</p>
+            <p className="text-green-600 text-xs mt-0.5">Produsen sedang memproses pesanan Anda. Tunggu konfirmasi selanjutnya.</p>
           </div>
         </div>
       )}
@@ -230,7 +230,7 @@ function OrdersContent() {
                 )}
               </div>
 
-              {/* Distributor */}
+              {/* Produsen */}
               <p className="text-xs text-gray-500 mb-4">
                 Dari: <span className="font-medium text-gray-700">{order.distributor.companyName}</span>
                 {order.distributor.city && ` · ${order.distributor.city}`}

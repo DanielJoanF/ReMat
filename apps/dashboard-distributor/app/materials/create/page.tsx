@@ -104,11 +104,11 @@ export default function CreateMaterialPage() {
         title: data.nama, description: data.deskripsi, categoryId: data.kategori,
         qualityGrade: data.grade, price: data.harga, unit: data.unit,
         quantity: data.stok, location: data.lokasi,
-        status: 'DRAFT',
+        status: 'PENDING_REVIEW',
       });
       const materialId = created.data?.id;
 
-      // Upload foto yang dipilih setelah material tersimpan (draf).
+      // Upload foto yang dipilih setelah material tersimpan.
       // Gagal upload hanya menampilkan toast — tidak mengubah data material.
       if (materialId) {
         for (const file of photos) {
@@ -120,7 +120,7 @@ export default function CreateMaterialPage() {
         }
       }
 
-      toast({ type: 'success', message: 'Material berhasil disimpan sebagai draf' });
+      toast({ type: 'success', message: 'Material berhasil disimpan dan menunggu verifikasi admin' });
       router.push('/materials');
     } catch (err) {
       toast({ type: 'error', message: err instanceof Error ? err.message : 'Gagal menyimpan material' });
@@ -199,7 +199,7 @@ export default function CreateMaterialPage() {
 
           <div className="flex items-center justify-end gap-3">
             <Button variant="secondary" type="button" onClick={() => router.push('/materials')}>Batal</Button>
-            <Button variant="primary" type="submit" loading={submitting}><Save className="h-4 w-4" /> Simpan Draf</Button>
+            <Button variant="primary" type="submit" loading={submitting}><Save className="h-4 w-4" /> Simpan</Button>
           </div>
         </form>
       </div>

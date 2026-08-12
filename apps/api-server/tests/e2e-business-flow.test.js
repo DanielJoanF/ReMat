@@ -188,7 +188,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
   });
 
   describe("Phase 1: Distributor Uploads Material & Workflow", () => {
-    it("Distributor creates material -> status = DRAFT", async () => {
+    it("Distributor creates material -> status = PENDING_REVIEW (langsung masuk antrean review admin)", async () => {
       mockDb.distributorProfile.findUnique.mockResolvedValue({ id: "dist-prof-1" });
       mockDb.category.findUnique.mockResolvedValue({ id: "cat-1", name: "Plastik PET" });
       mockDb.material.findUnique.mockResolvedValue(null); // code check
@@ -203,7 +203,7 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
         unit: "TON",
         price: 5000000,
         location: "Semarang",
-        status: "DRAFT"
+        status: "PENDING_REVIEW"
       });
 
       const res = await request(app)
@@ -220,26 +220,22 @@ describe("E2E Business Flow Verification (Non-AI + AI RAG)", () => {
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.status).toBe("DRAFT");
+      expect(res.body.data.status).toBe("PENDING_REVIEW");
     });
 
-    it("Distributor submits material for review -> status = PENDING_REVIEW", async () => {
+    it("Material in PENDING_REVIEW cannot be submitted again (already in review queue)", async () => {
       mockDb.material.findUnique.mockResolvedValue({
         id: "mat-100",
-        status: "DRAFT",
+        status: "PENDING_REVIEW",
         distributor: { userId: "dist-user-1" }
-      });
-      mockDb.material.update.mockResolvedValue({
-        id: "mat-100",
-        status: "PENDING_REVIEW"
       });
 
       const res = await request(app)
         .patch("/materials/mat-100/submit")
         .set(dist1Headers);
 
-      expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("PENDING_REVIEW");
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toMatch(/Can only submit DRAFT/);
     });
 
     it("Admin approves material -> status = ACTIVE", async () => {

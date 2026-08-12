@@ -111,7 +111,7 @@ export default function RegisterPage() {
                   disabled={isLoading || success}
                 >
                   <option value="CONSUMER" className="bg-neutral-900 text-white">Konsumen (Akses Marketplace)</option>
-                  <option value="DISTRIBUTOR" className="bg-neutral-900 text-white">Distributor (Akses Dashboard)</option>
+                  <option value="DISTRIBUTOR" className="bg-neutral-900 text-white">Produsen (Akses Dashboard)</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-white/50">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -267,7 +267,7 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Conditional Company Name Field for Distributor */}
+              {/* Conditional Company Name Field for Produsen */}
               {role === "DISTRIBUTOR" && (
                 <div className="col-span-1 md:col-span-2">
                   <label htmlFor="companyName" className="block text-xs font-semibold uppercase tracking-wider text-white mb-1.5">

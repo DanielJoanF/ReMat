@@ -84,7 +84,7 @@ function MarketplaceContent() {
             ...m,
             quality_grade: m.qualityGrade || "Grade A",
             isVerified: m.distributor?.isVerified || false,
-            distributorName: m.distributor?.companyName || "Distributor",
+            distributorName: m.distributor?.companyName || "Produsen",
             imageUrl: m.documents?.[0]?.fileUrl || null,
             unit: m.unit?.toLowerCase() || "kg",
             status: m.status?.toLowerCase() || "active"

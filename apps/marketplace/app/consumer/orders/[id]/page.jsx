@@ -40,7 +40,7 @@ function normalizeTransaction(tx) {
     createdAt: tx.createdAt,
     updatedAt: tx.updatedAt,
     distributor: {
-      companyName: tx.distributor?.companyName || "Distributor",
+      companyName: tx.distributor?.companyName || "Produsen",
       city: tx.distributor?.city || "",
       phone: tx.distributor?.user?.phone || null,
     },
@@ -353,9 +353,9 @@ export default function TransactionDetailPage() {
           <p className="text-sm text-gray-700">{transaction.shippingAddress}</p>
         </div>
 
-        {/* ── Informasi Distributor ─────────────────────────────────────── */}
+        {/* ── Informasi Produsen ─────────────────────────────────────── */}
         <div className="p-5">
-          <h2 className="font-bold text-gray-900 mb-3">Informasi Distributor</h2>
+          <h2 className="font-bold text-gray-900 mb-3">Informasi Produsen</h2>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-remat-green text-white rounded-xl flex items-center justify-center text-sm font-bold">
               {transaction.distributor.companyName.charAt(0)}

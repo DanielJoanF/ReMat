@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'ReMat Distributor Dashboard',
-  description: 'B2B/B2C Industrial Waste Marketplace - Distributor Dashboard',
+  title: 'ReMat Produsen Dashboard',
+  description: 'B2B/B2C Industrial Waste Marketplace - Produsen Dashboard',
 };
 
 export const viewport: Viewport = {

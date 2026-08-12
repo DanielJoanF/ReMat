@@ -63,7 +63,7 @@ export default function Navbar() {
           <div className="ml-auto flex items-center gap-2">            
 
 
-            {/* Distributor Dashboard link */}
+            {/* Produsen Dashboard link */}
             {role === "DISTRIBUTOR" && (
               <Link href="/distributor" className="btn-ghost text-xs gap-1.5">
                 <LayoutDashboard className="w-4 h-4" />

@@ -25,7 +25,7 @@ const MOCK_CATEGORIES = [
 
 const FEATURES = [
   { icon: Sparkles, title: "AI Smart Search", desc: "Temukan material ideal dengan pencarian semantik bertenaga AI." },
-  { icon: ShieldCheck, title: "Distributor Terverifikasi", desc: "Setiap distributor telah melewati proses verifikasi ketat." },
+  { icon: ShieldCheck, title: "Produsen Terverifikasi", desc: "Setiap produsen telah melewati proses verifikasi ketat." },
   { icon: Leaf, title: "Daur Ulang Berkelanjutan", desc: "Mendukung ekonomi sirkular melalui daur ulang limbah." },
 ];
 
@@ -64,11 +64,11 @@ export default function HomePage() {
               </div> */}
               <h1 className="text-4xl md:text-5xl xl:text-6xl font-bold text-white leading-tight mb-5 text-balance">
                 Platform Kolaboratif{" "}
-                <span className="text-emerald-400">Distributor-Konsumen</span>{" "}
+                <span className="text-emerald-400">Produsen-Konsumen</span>{" "}
                 untuk Industri Bebas Limbah
               </h1>
               <p className="text-lg text-neutral-300 mb-8 leading-relaxed max-w-xl">
-                Temukan material industri berkualitas, dukung ekonomi sirkular, dan kurangi jejak karbon bersama ratusan distributor terverifikasi di seluruh Indonesia.
+                Temukan material industri berkualitas, dukung ekonomi sirkular, dan kurangi jejak karbon bersama ratusan produsen terverifikasi di seluruh Indonesia.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/marketplace" id="hero-cta-jual" className="btn-primary text-base px-6 py-3 gap-2">

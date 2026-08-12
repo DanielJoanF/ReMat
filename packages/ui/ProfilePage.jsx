@@ -316,7 +316,7 @@ export function ProfilePage() {
               <h4 className="text-sm font-bold text-gray-800">Detail Alamat & Operasional</h4>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Nama Perusahaan (Only for DISTRIBUTOR) */}
+                {/* Nama Perusahaan (Only for PRODUSEN) */}
                 {role === "DISTRIBUTOR" && (
                   <div className="col-span-1 sm:col-span-2">
                     <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Nama Perusahaan / Unit Usaha</label>

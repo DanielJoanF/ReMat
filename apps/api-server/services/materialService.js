@@ -341,8 +341,10 @@ const createMaterial = async (userId, data) => {
       location: data.location,
       latitude: data.latitude ? parseFloat(data.latitude) : null,
       longitude: data.longitude ? parseFloat(data.longitude) : null,
-      requiresMsds: data.requiresMsds || false
-      // status defaults to DRAFT via schema
+      requiresMsds: data.requiresMsds || false,
+      // Material baru langsung masuk antrean review admin (PENDING_REVIEW),
+      // bukan DRAFT — distributor tidak perlu submit manual lagi.
+      status: "PENDING_REVIEW"
     },
     include: {
       category: { select: { id: true, name: true, slug: true } }

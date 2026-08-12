@@ -20,7 +20,7 @@ import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
 interface Material { id: string; title: string; unit: string; materialCode?: string }
 interface OrderConsumer { id?: string; companyName?: string; userId?: string; user?: { name: string } }
-interface OrderItem { id: string; material: Material; quantity: number; unit: string; unitPrice: number; subtotal: number }
+interface OrderItem { id: string; material: Material | null; quantity: number; unit: string; unitPrice: number; subtotal: number }
 interface OrderDetail {
   id: string; items: OrderItem[]; status: OrderStatus; createdAt: string; updatedAt: string;
   trackingNumber?: string; totalAmount: number; consumer?: OrderConsumer | null; notes?: string;
@@ -234,11 +234,11 @@ export default function OrderDetailPage() {
                 {order.items.map((item, i) => (
                   <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{i + 1}. {item.material.title}</p>
-                      {item.material.materialCode && <p className="text-xs text-gray-500 mt-0.5">Kode: {item.material.materialCode}</p>}
+                      <p className="font-medium text-gray-900">{i + 1}. {item.material?.title || 'Material (dihapus)'}</p>
+                      {item.material?.materialCode && <p className="text-xs text-gray-500 mt-0.5">Kode: {item.material.materialCode}</p>}
                     </div>
                     <div className="text-right ml-4">
-                      <p className="text-sm text-gray-700">{item.quantity.toLocaleString('id-ID')} {item.material.unit || item.unit || 'kg'} × {formatCurrency(item.unitPrice)}</p>
+                      <p className="text-sm text-gray-700">{item.quantity.toLocaleString('id-ID')} {item.material?.unit || item.unit || 'kg'} × {formatCurrency(item.unitPrice)}</p>
                       <p className="text-sm font-semibold text-gray-900">{formatCurrency(lineTotal(item))}</p>
                     </div>
                   </div>
@@ -270,7 +270,7 @@ export default function OrderDetailPage() {
                 <div className="space-y-3">
                   {order.items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">{item.material.title}</span>
+                      <span className="text-gray-600">{item.material?.title || 'Material (dihapus)'}</span>
                       <span className="text-gray-900">{formatCurrency(lineTotal(item))}</span>
                     </div>
                   ))}

@@ -4,7 +4,7 @@
 
 module.exports = {
   APP_NAME: "ReMat",
-  DESCRIPTION: "Platform Kolaboratif Distributor-Konsumen untuk Industri Bebas Limbah",
+  DESCRIPTION: "Platform Kolaboratif Produsen-Konsumen untuk Industri Bebas Limbah",
   ROLES: {
     DISTRIBUTOR: "DISTRIBUTOR",
     CONSUMER: "CONSUMER",

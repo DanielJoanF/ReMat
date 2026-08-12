@@ -40,7 +40,7 @@ function SearchContent() {
         ...r,
         quality_grade: r.qualityGrade || "Grade A",
         isVerified: r.distributor?.isVerified || false,
-        distributorName: r.distributor?.companyName || "Distributor",
+        distributorName: r.distributor?.companyName || "Produsen",
         imageUrl: r.documents?.[0]?.fileUrl || null,
         unit: r.unit?.toLowerCase() || "kg",
         status: r.status?.toLowerCase() || "active",

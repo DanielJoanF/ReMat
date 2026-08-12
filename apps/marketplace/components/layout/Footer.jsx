@@ -59,7 +59,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-sm text-gray-600 leading-relaxed mb-5 max-w-xs">
-              Platform kolaboratif distributor-konsumen untuk industri bebas limbah. Membangun ekonomi sirkular bersama.
+              Platform kolaboratif produsen-konsumen untuk industri bebas limbah. Membangun ekonomi sirkular bersama.
             </p>
             <div className="flex flex-col gap-2 text-sm text-gray-500">
               <a href="mailto:hello@remat.id" className="flex items-center gap-2 hover:text-remat-green transition-colors">

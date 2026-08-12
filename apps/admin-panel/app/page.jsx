@@ -117,7 +117,7 @@ export default function AdminDashboardPage() {
       )
     },
     {
-      label: "Total Distributor",
+      label: "Total Produsen",
       value: (metrics?.summary?.totalDistributors ?? 0).toLocaleString("id-ID"),
       sub: "Produsen limbah terdaftar",
       color: "text-violet-700",

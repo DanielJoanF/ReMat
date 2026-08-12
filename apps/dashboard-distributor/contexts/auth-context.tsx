@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedRole = sessionStorage.getItem(STORAGE_KEY_USER_ROLE);
     const storedName = sessionStorage.getItem(STORAGE_KEY_USER_NAME);
 
-    // Enforce that the user is logged in and is a DISTRIBUTOR
+    // Enforce that the user is logged in and is a PRODUSEN
     if (!storedId || storedRole !== 'DISTRIBUTOR') {
       window.location.href = LOGIN_URL;
       return;
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({
       id: storedId,
       role: storedRole,
-      name: storedName || 'Distributor User',
+      name: storedName || 'Produsen User',
     });
     setIsReady(true);
   }, []);

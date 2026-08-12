@@ -12,7 +12,7 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
   '/orders': { title: 'Pesanan', subtitle: 'Pantau dan kelola semua transaksi penjualan material Anda.' },
   '/circular': { title: 'Laporan Sirkular', subtitle: 'Pantau dampak ekonomi sirkular dari aktivitas daur ulang material.' },
   '/alerts': { title: 'Alert', subtitle: 'Kelola notifikasi dan alert terkait aktivitas Anda.' },
-  '/profile': { title: 'Profil Toko', subtitle: 'Kelola informasi profil distributor dan toko Anda.' },
+  '/profile': { title: 'Profil Toko', subtitle: 'Kelola informasi profil produsen dan toko Anda.' },
 };
 
 // Route resolver: longest-prefix match so nested routes (detail, edit, documents)

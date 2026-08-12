@@ -85,7 +85,7 @@ export default function VerifikasiPenjualanPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Verifikasi Penjualan</h1>
             <p className="text-sm text-slate-500 mt-1">
-              Antrean material yang diajukan distributor untuk ditampilkan di marketplace
+              Antrean material yang diajukan produsen untuk ditampilkan di marketplace
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -158,7 +158,7 @@ export default function VerifikasiPenjualanPage() {
                         <p className="font-bold text-slate-800">{mat.location || "—"}</p>
                       </div>
                       <div className="bg-slate-50 rounded-lg p-2.5">
-                        <p className="text-slate-400 font-medium mb-0.5">Distributor</p>
+                        <p className="text-slate-400 font-medium mb-0.5">Produsen</p>
                         <p className="font-bold text-slate-800">{mat.distributor?.companyName || "N/A"}</p>
                       </div>
                     </div>

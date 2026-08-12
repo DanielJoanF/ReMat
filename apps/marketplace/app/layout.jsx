@@ -9,7 +9,7 @@ export const metadata = {
   keywords: ["marketplace limbah", "industri sirkular", "daur ulang", "material bekas", "remat"],
   openGraph: {
     title: "ReMat Marketplace",
-    description: "Platform Kolaboratif Distributor-Konsumen untuk Industri Bebas Limbah",
+    description: "Platform Kolaboratif Produsen-Konsumen untuk Industri Bebas Limbah",
     type: "website",
   },
 };

@@ -17,7 +17,6 @@ import {
   Edit3,
   Trash2,
   X,
-  Send,
   RefreshCw,
   FileText,
   ChevronDown,
@@ -32,7 +31,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/contexts/auth-context';
-import { getData, patchData, deleteData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
+import { getData, deleteData, RATE_LIMIT_EXCEEDED } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -248,17 +247,6 @@ function MaterialsPageInner() {
       }
     };
 
-  const handleSubmitMaterial = async (material: Material) => {
-    try {
-      await patchData(`/materials/${material.id}/submit`);
-      toastRef.current({ type: 'success', message: 'Material berhasil disubmit untuk review.' });
-      handleRefresh();
-    } catch (error: unknown) {
-      handleApiError(error, toastRef.current, 'Gagal submit material');
-    }
-  };
-
-  // Filtered materials
   const filteredMaterials = materials.filter((item) => {
     const categoryName = item.category?.name ?? '';
     if (selectedCategory !== 'Semua Kategori' && categoryName !== selectedCategory) {
@@ -375,15 +363,6 @@ function MaterialsPageInner() {
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                        {item.status === 'DRAFT' && (
-                          <button
-                            onClick={() => handleSubmitMaterial(item)}
-                            className="p-1.5 rounded text-primary hover:bg-[#E8F5E9] transition-colors"
-                            title="Submit"
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
