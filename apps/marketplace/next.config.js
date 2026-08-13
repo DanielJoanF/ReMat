@@ -1,4 +1,5 @@
 const nextConfig = {
+  output: "standalone",
   reactStrictMode: true,
   transpilePackages: ["@remat/ui", "@remat/config"],
   images: {

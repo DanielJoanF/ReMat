@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  remat-api:
+    build:
+      context: .
+      dockerfile: apps/api-server/Dockerfile
+    container_name: remat-api-server
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4000:4000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    networks:
+      - remat-network
+      - nginx-proxy-manager_default
+
+  remat-marketplace:
+    build:
+      context: .
+      dockerfile: apps/marketplace/Dockerfile
+      args:
+        APP_NAME: marketplace
+    container_name: remat-marketplace
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3010:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL=https://api.remat.id
+    networks:
+      - remat-network
+      - nginx-proxy-manager_default
+
+  remat-admin:
+    build:
+      context: .
+      dockerfile: apps/marketplace/Dockerfile
+      args:
+        APP_NAME: admin-panel
+    container_name: remat-admin-panel
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3011:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL=https://api.remat.id
+    networks:
+      - remat-network
+      - nginx-proxy-manager_default
+
+  remat-distributor:
+    build:
+      context: .
+      dockerfile: apps/marketplace/Dockerfile
+      args:
+        APP_NAME: dashboard-distributor
+    container_name: remat-dashboard-distributor
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3012:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL=https://api.remat.id
+    networks:
+      - remat-network
+      - nginx-proxy-manager_default
+
+  remat-login:
+    build:
+      context: .
+      dockerfile: apps/marketplace/Dockerfile
+      args:
+        APP_NAME: login
+    container_name: remat-login-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3013:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL=https://api.remat.id
+    networks:
+      - remat-network
+      - nginx-proxy-manager_default
+
+networks:
+  remat-network:
+    driver: bridge
+  nginx-proxy-manager_default:
+    external: true
